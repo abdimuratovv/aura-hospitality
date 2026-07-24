@@ -1,0 +1,48 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         String
+  createdAt    DateTime @default(now())
+}
+
+model Property {
+  id           String        @id @default(cuid())
+  code         String        @unique
+  name         String
+  transactions Transaction[]
+  createdAt    DateTime      @default(now())
+}
+
+enum TransactionFlag {
+  CLEARED
+  FLAGGED
+  REVIEW
+}
+
+model Transaction {
+  id       String           @id @default(cuid())
+  folioId  String
+  postedAt DateTime
+  type     String
+  agent    String
+  amount   Decimal          @db.Decimal(10, 2)
+  flag     TransactionFlag  @default(CLEARED)
+
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([propertyId])
+  @@index([postedAt])
+}
