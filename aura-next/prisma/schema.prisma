@@ -13,13 +13,25 @@ model User {
   name         String
   role         String
   createdAt    DateTime @default(now())
+
+  defaultPropertyId String?
+  defaultProperty   Property? @relation(fields: [defaultPropertyId], references: [id])
+
+  twoFactorEnabled   Boolean @default(true)
+  criticalAlertsEmail Boolean @default(true)
+  weeklyDigest       Boolean @default(false)
 }
 
 model Property {
   id           String        @id @default(cuid())
   code         String        @unique
   name         String
+  shortName    String
   transactions Transaction[]
+  employees    Employee[]
+  fraudCases   FraudCase[]
+  riskScores   PropertyRiskScore[]
+  users        User[]
   createdAt    DateTime      @default(now())
 }
 
@@ -30,13 +42,13 @@ enum TransactionFlag {
 }
 
 model Transaction {
-  id       String           @id @default(cuid())
+  id       String          @id @default(cuid())
   folioId  String
   postedAt DateTime
   type     String
   agent    String
-  amount   Decimal          @db.Decimal(10, 2)
-  flag     TransactionFlag  @default(CLEARED)
+  amount   Decimal         @db.Decimal(10, 2)
+  flag     TransactionFlag @default(CLEARED)
 
   propertyId String
   property   Property @relation(fields: [propertyId], references: [id])
@@ -45,4 +57,164 @@ model Transaction {
 
   @@index([propertyId])
   @@index([postedAt])
+}
+
+enum RiskBand {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+model Employee {
+  id             String   @id @default(cuid())
+  name           String
+  role           String
+  lastActivityAt DateTime
+  riskScore      Int
+  band           RiskBand
+
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([propertyId])
+}
+
+enum FraudSeverity {
+  CRITICAL
+  HIGH
+  MEDIUM
+}
+
+model FraudCase {
+  id         String        @id @default(cuid())
+  severity   FraudSeverity
+  pattern    String
+  agent      String
+  confidence Int
+  amount     Decimal       @db.Decimal(10, 2)
+
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([propertyId])
+}
+
+model LeakageCategory {
+  id       String  @id @default(cuid())
+  category String
+  amount   Decimal @db.Decimal(10, 2)
+  pct      Int
+  order    Int
+
+  createdAt DateTime @default(now())
+}
+
+enum AlertSeverity {
+  CRITICAL
+  WARNING
+  INFO
+}
+
+model Alert {
+  id       String        @id @default(cuid())
+  severity AlertSeverity
+  title    String
+  meta     String
+  source   String
+
+  createdAt DateTime @default(now())
+}
+
+model NightAuditRun {
+  id                   String   @id @default(cuid())
+  date                 DateTime
+  closeStepsCompleted  Int
+  closeStepsTotal      Int
+  openDiscrepancies    Int
+  discrepancyAmount    Decimal  @db.Decimal(10, 2)
+  revenuePosted        Decimal  @db.Decimal(10, 2)
+  transactionCount     Int
+  closeProgressPct     Int
+  estCompletionLabel   String
+
+  checklist ChecklistItem[]
+
+  createdAt DateTime @default(now())
+}
+
+enum ChecklistStatus {
+  DONE
+  WARNING
+  CRITICAL
+  PENDING
+}
+
+model ChecklistItem {
+  id     String          @id @default(cuid())
+  label  String
+  detail String?
+  meta   String
+  status ChecklistStatus
+  order  Int
+
+  nightAuditRunId String
+  nightAuditRun   NightAuditRun @relation(fields: [nightAuditRunId], references: [id])
+
+  @@index([nightAuditRunId])
+}
+
+model ReportDefinition {
+  id               String @id @default(cuid())
+  title            String
+  description      String
+  frequency        String
+  lastUpdatedLabel String
+  order            Int
+}
+
+enum InsightType {
+  CRITICAL
+  OPPORTUNITY
+  TREND
+}
+
+model Insight {
+  id   String      @id @default(cuid())
+  type InsightType
+  text String
+
+  createdAt DateTime @default(now())
+}
+
+model PropertyRiskScore {
+  id       String @id @default(cuid())
+  dayIndex Int
+  score    Float
+
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id])
+
+  @@unique([propertyId, dayIndex])
+}
+
+// Portfolio-wide KPI snapshot for the dashboard stat cards. In the target
+// architecture these would be computed by an OLAP layer (ClickHouse) over
+// the full transaction history, not derived from the small OLTP sample in
+// this dev database — so for now this is a single seeded snapshot row
+// rather than a live aggregate.
+model DashboardSnapshot {
+  id                        String   @id @default(cuid())
+  portfolioRevenue          Decimal  @db.Decimal(12, 2)
+  portfolioRevenueChangePct Float
+  activeFraudAlerts         Int
+  activeFraudAlertsCritical Int
+  revenueLeakage            Decimal  @db.Decimal(12, 2)
+  revenueLeakageRecovered   Decimal  @db.Decimal(12, 2)
+  nightAuditPct             Float
+  nightAuditExceptions      Int
+  updatedAt                 DateTime @updatedAt
 }

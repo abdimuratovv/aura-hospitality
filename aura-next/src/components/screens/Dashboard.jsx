@@ -1,5 +1,8 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import Icon from '../Icon.jsx';
-import { heatData } from '../../lib/data.js';
+import { timeAgo } from '../../lib/format.js';
 
 function cellColor(v) {
   if (v < 0.33) return `rgba(95,191,153,${0.25 + v})`;
@@ -7,17 +10,17 @@ function cellColor(v) {
   return `rgba(229,86,63,${0.35 + v * 0.5})`;
 }
 
-function Heatmap() {
+function Heatmap({ heatmap }) {
   return (
     <div className="flex flex-col gap-1.5">
-      {heatData.map((row, ri) => (
-        <div key={ri} className="grid grid-cols-[128px_1fr] items-center gap-2.5">
-          <span className="truncate text-[11.5px] font-medium text-faint-2">{row[0]}</span>
+      {Object.entries(heatmap).map(([name, scores]) => (
+        <div key={name} className="grid grid-cols-[128px_1fr] items-center gap-2.5">
+          <span className="truncate text-[11.5px] font-medium text-faint-2">{name}</span>
           <div className="grid grid-cols-7 gap-1">
-            {row[1].map((v, ci) => (
+            {scores.map((v, ci) => (
               <div
                 key={ci}
-                title={`${row[0]} · risk ${Math.round(v * 100)}`}
+                title={`${name} · risk ${Math.round(v * 100)}`}
                 className="h-[22px] rounded-md shadow-[inset_0_1px_1px_rgba(255,255,255,.5)]"
                 style={{ background: cellColor(v) }}
               />
@@ -29,14 +32,39 @@ function Heatmap() {
   );
 }
 
-const statCards = [
-  { label: 'Portfolio Revenue', icon: 'revenue', iconC: 'text-success', iconBg: 'bg-success-bg', value: '$4.82M', badge: '▲ 6.4%', badgeC: 'text-success', badgeBg: 'bg-success-bg', note: 'vs last week' },
-  { label: 'Active Fraud Alerts', icon: 'shield', iconC: 'text-critical', iconBg: 'bg-critical-bg', value: '12', badge: '3 critical', badgeC: 'text-critical', badgeBg: 'bg-critical-bg', note: 'needs review' },
-  { label: 'Revenue Leakage', icon: 'drop', iconC: 'text-warning', iconBg: 'bg-warning-bg', value: '$184K', badge: '$71K recovered', badgeC: 'text-warning', badgeBg: 'bg-warning-bg', note: '' },
-  { label: 'Night Audit', icon: 'moon', iconC: 'text-brand', iconBg: 'bg-[rgba(79,140,255,.16)]', value: '98.2%', badge: 'Reconciled', badgeC: 'text-success', badgeBg: 'bg-success-bg', note: '3 exceptions' },
-];
+const INSIGHT_META = {
+  CRITICAL: { label: 'Critical', dot: 'bg-critical', text: 'text-critical', border: 'border-[rgba(229,86,63,.16)]', bg: 'bg-[rgba(229,86,63,.08)]' },
+  OPPORTUNITY: { label: 'Opportunity', dot: 'bg-warning', text: 'text-warning', border: 'border-[rgba(214,158,46,.16)]', bg: 'bg-[rgba(214,158,46,.08)]' },
+  TREND: { label: 'Trend', dot: 'bg-brand', text: 'text-brand', border: 'border-[rgba(79,140,255,.16)]', bg: 'bg-[rgba(79,140,255,.08)]' },
+};
+
+const ALERT_DOT = { CRITICAL: 'bg-critical', WARNING: 'bg-warning', INFO: 'bg-brand' };
 
 export default function Dashboard({ goAlerts }) {
+  const [data, setData] = useState(null);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    fetch('/api/dashboard')
+      .then((res) => {
+        if (!res.ok) throw new Error('Failed to load dashboard');
+        return res.json();
+      })
+      .then(setData)
+      .catch((err) => setError(err.message));
+  }, []);
+
+  if (error) return <div className="text-sm text-critical">{error}</div>;
+  if (!data) return <div className="text-sm text-faint">Loading…</div>;
+
+  const s = data.snapshot;
+  const statCards = [
+    { label: 'Portfolio Revenue', icon: 'revenue', iconC: 'text-success', iconBg: 'bg-success-bg', value: `$${(s.portfolioRevenue / 1e6).toFixed(2)}M`, badge: `▲ ${s.portfolioRevenueChangePct}%`, badgeC: 'text-success', badgeBg: 'bg-success-bg', note: 'vs last week' },
+    { label: 'Active Fraud Alerts', icon: 'shield', iconC: 'text-critical', iconBg: 'bg-critical-bg', value: String(s.activeFraudAlerts), badge: `${s.activeFraudAlertsCritical} critical`, badgeC: 'text-critical', badgeBg: 'bg-critical-bg', note: 'needs review' },
+    { label: 'Revenue Leakage', icon: 'drop', iconC: 'text-warning', iconBg: 'bg-warning-bg', value: `$${Math.round(s.revenueLeakage / 1000)}K`, badge: `$${Math.round(s.revenueLeakageRecovered / 1000)}K recovered`, badgeC: 'text-warning', badgeBg: 'bg-warning-bg', note: '' },
+    { label: 'Night Audit', icon: 'moon', iconC: 'text-brand', iconBg: 'bg-[rgba(79,140,255,.16)]', value: `${s.nightAuditPct}%`, badge: 'Reconciled', badgeC: 'text-success', badgeBg: 'bg-success-bg', note: `${s.nightAuditExceptions} exceptions` },
+  ];
+
   return (
     <div className="animate-fade-up">
       <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -86,6 +114,7 @@ export default function Dashboard({ goAlerts }) {
           <div className="mt-2.5 flex justify-between text-[11px] text-hairline">
             <span>Wk 1</span><span>Wk 3</span><span>Wk 5</span><span>Wk 7</span><span>Wk 9</span><span>Wk 11</span>
           </div>
+          <p className="mt-2 text-[11px] text-faint">Illustrative trend — weekly time-series not tracked yet.</p>
         </div>
 
         <div className="glass-card p-6">
@@ -96,18 +125,18 @@ export default function Dashboard({ goAlerts }) {
             <h3 className="text-base font-semibold">AI Insights</h3>
           </div>
           <div className="flex flex-col gap-3.5">
-            <div className="rounded-2xl border border-[rgba(229,86,63,.16)] bg-[rgba(229,86,63,.08)] p-3.5">
-              <div className="mb-1 flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-critical" /><span className="text-[11px] font-semibold uppercase tracking-[.04em] text-critical">Critical</span></div>
-              <p className="text-[13px] leading-relaxed text-ink-soft">Voided-then-reposted folios at <b>The Grand Meridian</b> spiked 340% overnight — concentrated on 2 front-desk agents.</p>
-            </div>
-            <div className="rounded-2xl border border-[rgba(214,158,46,.16)] bg-[rgba(214,158,46,.08)] p-3.5">
-              <div className="mb-1 flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-warning" /><span className="text-[11px] font-semibold uppercase tracking-[.04em] text-warning">Opportunity</span></div>
-              <p className="text-[13px] leading-relaxed text-ink-soft">Unbilled minibar &amp; late-checkout fees across 3 properties total <b>$71K</b> recoverable this cycle.</p>
-            </div>
-            <div className="rounded-2xl border border-[rgba(79,140,255,.16)] bg-[rgba(79,140,255,.08)] p-3.5">
-              <div className="mb-1 flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-brand" /><span className="text-[11px] font-semibold uppercase tracking-[.04em] text-brand">Trend</span></div>
-              <p className="text-[13px] leading-relaxed text-ink-soft">Comp-room approvals are trending down 12% — policy tightening is holding.</p>
-            </div>
+            {data.insights.map((insight) => {
+              const meta = INSIGHT_META[insight.type];
+              return (
+                <div key={insight.id} className={`rounded-2xl border p-3.5 ${meta.border} ${meta.bg}`}>
+                  <div className="mb-1 flex items-center gap-1.5">
+                    <span className={`h-1.5 w-1.5 rounded-full ${meta.dot}`} />
+                    <span className={`text-[11px] font-semibold uppercase tracking-[.04em] ${meta.text}`}>{meta.label}</span>
+                  </div>
+                  <p className="text-[13px] leading-relaxed text-ink-soft">{insight.text}</p>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -119,19 +148,14 @@ export default function Dashboard({ goAlerts }) {
             <a href="#" onClick={(e) => { e.preventDefault(); goAlerts(); }} className="text-[12.5px] font-semibold">View all</a>
           </div>
           <div className="flex flex-col gap-1">
-            {[
-              { dot: 'bg-critical', title: 'Duplicate refund — $2,480', meta: 'Folio #GM-88213 · The Grand Meridian', time: '2m ago', shade: false },
-              { dot: 'bg-warning', title: 'Cash variance at close — $610', meta: 'Front Desk · Meridian Bayside', time: '18m ago', shade: true },
-              { dot: 'bg-critical', title: 'After-hours rate override', meta: 'Agent J. Okafor · 03:14 local', time: '41m ago', shade: false },
-              { dot: 'bg-brand', title: 'Unbilled minibar batch flagged', meta: '42 folios · Meridian Old Town', time: '1h ago', shade: true },
-            ].map((a, i) => (
-              <div key={i} className={`flex items-center gap-3.5 rounded-2xl px-3 py-2.5 ${a.shade ? 'bg-[rgba(20,30,70,.035)]' : ''}`}>
-                <span className={`h-2 w-2 flex-none rounded-full ${a.dot}`} />
+            {data.recentAlerts.map((a, i) => (
+              <div key={a.id} className={`flex items-center gap-3.5 rounded-2xl px-3 py-2.5 ${i % 2 === 1 ? 'bg-[rgba(20,30,70,.035)]' : ''}`}>
+                <span className={`h-2 w-2 flex-none rounded-full ${ALERT_DOT[a.severity]}`} />
                 <div className="min-w-0 flex-1">
                   <div className="text-[13.5px] font-semibold">{a.title}</div>
                   <div className="text-xs text-faint">{a.meta}</div>
                 </div>
-                <span className="flex-none text-xs text-faint">{a.time}</span>
+                <span className="flex-none text-xs text-faint">{timeAgo(a.createdAt)}</span>
               </div>
             ))}
           </div>
@@ -140,9 +164,9 @@ export default function Dashboard({ goAlerts }) {
         <div className="glass-card p-6">
           <div className="mb-4.5">
             <h3 className="mb-1 text-base font-semibold">Property Risk Heatmap</h3>
-            <p className="text-[12.5px] text-faint">Composite risk · 6 properties</p>
+            <p className="text-[12.5px] text-faint">Composite risk · {Object.keys(data.heatmap).length} properties</p>
           </div>
-          <Heatmap />
+          <Heatmap heatmap={data.heatmap} />
           <div className="mt-4 flex items-center gap-3 text-[11px] text-faint">
             <span>Low</span>
             <div className="h-[7px] flex-1 rounded" style={{ background: 'linear-gradient(90deg,#5fbf99,#e0c65a,#e5563f)' }} />
