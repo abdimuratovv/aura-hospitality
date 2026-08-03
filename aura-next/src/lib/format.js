@@ -63,6 +63,37 @@ export function timeAgo(dateInput) {
   return `${days}d ago`;
 }
 
+// Builds a smoothed SVG line + area path for a series of values, scaled to its
+// own min/max range (not a shared axis) — used for the Dashboard revenue/leakage
+// trend, where the two series differ in magnitude by ~250x and only the shape
+// of each trend, not a to-scale comparison, is the point.
+export function buildTrendPaths(values, { width = 640, height = 240, padTop = 40, padBottom = 34 } = {}) {
+  const n = values.length;
+  if (n < 2) return { linePath: '', areaPath: '', points: [] };
+
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const span = max - min || 1;
+  const points = values.map((v, i) => ({
+    x: (i / (n - 1)) * width,
+    y: padTop + (1 - (v - min) / span) * (height - padTop - padBottom),
+  }));
+
+  let linePath = `M${points[0].x.toFixed(1)},${points[0].y.toFixed(1)}`;
+  for (let i = 1; i < points.length; i++) {
+    const p0 = points[i - 1];
+    const p1 = points[i];
+    const midX = ((p0.x + p1.x) / 2).toFixed(1);
+    linePath += ` C${midX},${p0.y.toFixed(1)} ${midX},${p1.y.toFixed(1)} ${p1.x.toFixed(1)},${p1.y.toFixed(1)}`;
+  }
+
+  const first = points[0];
+  const last = points[points.length - 1];
+  const areaPath = `${linePath} L${last.x.toFixed(1)},${height} L${first.x.toFixed(1)},${height} Z`;
+
+  return { linePath, areaPath, points };
+}
+
 export function formatRelativeDay(dateInput) {
   const d = new Date(dateInput);
   const now = new Date();

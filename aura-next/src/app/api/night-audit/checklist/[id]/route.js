@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db.js';
 import { getSession } from '@/lib/session.js';
+import { getAccessiblePropertyIds } from '@/lib/access.js';
+import { serializeNightAuditRun } from '@/lib/serializers.js';
 
 const VALID_STATUSES = ['DONE', 'WARNING', 'CRITICAL', 'PENDING'];
 
@@ -22,13 +24,18 @@ export async function PATCH(request, { params }) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
+  const priorRun = await prisma.nightAuditRun.findUniqueOrThrow({
+    where: { id: existing.nightAuditRunId },
+  });
+
+  const propertyIds = await getAccessiblePropertyIds(session.id);
+  if (!propertyIds.includes(priorRun.propertyId)) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
+
   await prisma.checklistItem.update({
     where: { id },
     data: { status: body.status },
-  });
-
-  const priorRun = await prisma.nightAuditRun.findUniqueOrThrow({
-    where: { id: existing.nightAuditRunId },
   });
 
   // closeStepsCompleted tracks the broader close process, not just the items shown
@@ -47,25 +54,5 @@ export async function PATCH(request, { params }) {
     include: { checklist: { orderBy: { order: 'asc' } } },
   });
 
-  return NextResponse.json({
-    run: {
-      id: run.id,
-      date: run.date,
-      closeStepsCompleted: run.closeStepsCompleted,
-      closeStepsTotal: run.closeStepsTotal,
-      openDiscrepancies: run.openDiscrepancies,
-      discrepancyAmount: Number(run.discrepancyAmount),
-      revenuePosted: Number(run.revenuePosted),
-      transactionCount: run.transactionCount,
-      closeProgressPct: run.closeProgressPct,
-      estCompletionLabel: run.estCompletionLabel,
-      checklist: run.checklist.map((c) => ({
-        id: c.id,
-        label: c.label,
-        detail: c.detail,
-        meta: c.meta,
-        status: c.status,
-      })),
-    },
-  });
+  return NextResponse.json({ run: serializeNightAuditRun(run) });
 }

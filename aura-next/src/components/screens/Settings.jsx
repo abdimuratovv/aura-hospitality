@@ -31,6 +31,12 @@ export default function Settings() {
   const [error, setError] = useState('');
   const [saveState, setSaveState] = useState('idle'); // idle | saving | saved
 
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordState, setPasswordState] = useState('idle'); // idle | saving | saved
+
   useEffect(() => {
     fetch('/api/user/profile')
       .then((res) => {
@@ -68,6 +74,35 @@ export default function Settings() {
 
   function toggle(key) {
     setProfile((p) => ({ ...p, [key]: !p[key] }));
+  }
+
+  async function changePassword() {
+    setPasswordError('');
+    if (newPassword.length < 8) {
+      setPasswordError('New password must be at least 8 characters');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordError('New password and confirmation do not match');
+      return;
+    }
+    setPasswordState('saving');
+    const res = await fetch('/api/user/password', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (res.ok) {
+      setPasswordState('saved');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setTimeout(() => setPasswordState('idle'), 1800);
+    } else {
+      setPasswordError(json.error || 'Failed to change password');
+      setPasswordState('idle');
+    }
   }
 
   if (error) return <div className="text-sm text-critical">{error}</div>;
@@ -138,6 +173,35 @@ export default function Settings() {
             <div className="flex items-center justify-between py-3">
               <div><div className="text-sm font-semibold">Two-factor authentication</div><div className="text-[12.5px] text-faint">Required for all finance roles</div></div>
               <Toggle on={profile.twoFactorEnabled} onClick={() => toggle('twoFactorEnabled')} />
+            </div>
+
+            <div className="mt-4 border-t border-[rgba(60,70,110,.08)] pt-5">
+              <div className="mb-4 text-sm font-semibold">Change password</div>
+              <div className="grid grid-cols-1 gap-4.5 lg:grid-cols-2">
+                <div className="lg:col-span-2">
+                  <label className="mb-1.5 block text-[12.5px] font-semibold text-muted">Current password</label>
+                  <input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} className={field} />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-[12.5px] font-semibold text-muted">New password</label>
+                  <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className={field} />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-[12.5px] font-semibold text-muted">Confirm new password</label>
+                  <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className={field} />
+                </div>
+              </div>
+              {passwordError && <p className="mt-3 text-[13px] font-medium text-critical">{passwordError}</p>}
+              <div className="mt-4 flex items-center gap-3">
+                <button
+                  onClick={changePassword}
+                  disabled={passwordState === 'saving' || !currentPassword || !newPassword || !confirmPassword}
+                  className="btn-primary px-6.5 py-3 text-sm disabled:opacity-60"
+                >
+                  {passwordState === 'saving' ? 'Updating…' : 'Update password'}
+                </button>
+                {passwordState === 'saved' && <span className="text-[13px] font-medium text-success">Password updated</span>}
+              </div>
             </div>
           </>
         )}

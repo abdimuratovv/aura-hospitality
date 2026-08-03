@@ -1,14 +1,8 @@
 import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
+import { SESSION_COOKIE_NAME as COOKIE_NAME, getSessionSecretKey as getSecretKey } from './jwt.js';
 
-const COOKIE_NAME = 'aura_session';
 const MAX_AGE_SECONDS = 60 * 60 * 24 * 7; // 7 days
-
-function getSecretKey() {
-  const secret = process.env.SESSION_SECRET;
-  if (!secret) throw new Error('SESSION_SECRET is not set');
-  return new TextEncoder().encode(secret);
-}
 
 export async function createSession(user) {
   const token = await new SignJWT({ sub: user.id, email: user.email, name: user.name, role: user.role })

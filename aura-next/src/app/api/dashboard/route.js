@@ -13,15 +13,16 @@ export async function GET(request) {
   const accessibleIds = await getAccessiblePropertyIds(session.id);
   const propertyIds = resolvePropertyIds(accessibleIds, searchParams.get('propertyId'));
 
-  const [snapshot, insights, recentAlerts, riskScores] = await Promise.all([
+  const [snapshot, insights, recentAlerts, riskScores, weeklyFinancials] = await Promise.all([
     prisma.dashboardSnapshot.findFirst({ orderBy: { updatedAt: 'desc' } }),
     prisma.insight.findMany({ orderBy: { createdAt: 'desc' } }),
-    prisma.alert.findMany({ orderBy: { createdAt: 'desc' }, take: 4 }),
+    prisma.alert.findMany({ where: { propertyId: { in: propertyIds } }, orderBy: { createdAt: 'desc' }, take: 4 }),
     prisma.propertyRiskScore.findMany({
       where: { propertyId: { in: propertyIds } },
       include: { property: true },
       orderBy: [{ property: { createdAt: 'asc' } }, { dayIndex: 'asc' }],
     }),
+    prisma.weeklyFinancials.findMany({ orderBy: { weekIndex: 'asc' } }),
   ]);
 
   const heatmap = {};
@@ -47,5 +48,11 @@ export async function GET(request) {
     insights: insights.map((i) => ({ id: i.id, type: i.type, text: i.text })),
     recentAlerts: recentAlerts.map((a) => ({ id: a.id, severity: a.severity, title: a.title, meta: a.meta, createdAt: a.createdAt })),
     heatmap,
+    weeklyFinancials: weeklyFinancials.map((w) => ({
+      weekIndex: w.weekIndex,
+      weekLabel: w.weekLabel,
+      revenue: Number(w.revenue),
+      leakageRecovered: Number(w.leakageRecovered),
+    })),
   });
 }

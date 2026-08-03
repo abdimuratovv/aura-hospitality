@@ -177,42 +177,111 @@ async function main() {
   await prisma.alert.deleteMany({});
   await prisma.alert.createMany({
     data: [
-      { severity: 'CRITICAL', title: 'Duplicate refund — $2,480', meta: 'Folio #GM-88213 · The Grand Meridian · Fraud', source: 'Fraud', createdAt: minutesAgo(2) },
-      { severity: 'CRITICAL', title: 'Void-then-repost pattern detected', meta: 'Agent J. Okafor · The Grand Meridian · Fraud', source: 'Fraud', createdAt: minutesAgo(9) },
-      { severity: 'WARNING', title: 'Cash variance at close — $610', meta: 'Front Desk · Meridian Bayside · Audit', source: 'Audit', createdAt: minutesAgo(18) },
-      { severity: 'CRITICAL', title: 'After-hours rate override', meta: 'Agent J. Okafor · 03:14 local · Fraud', source: 'Fraud', createdAt: minutesAgo(41) },
-      { severity: 'INFO', title: 'Unbilled minibar batch flagged', meta: '42 folios · Meridian Old Town · Leakage', source: 'Leakage', createdAt: hoursAgo(1) },
-      { severity: 'WARNING', title: 'Comp room approval missing', meta: 'Agent S. Nakamura · Meridian Old Town · Fraud', source: 'Fraud', createdAt: hoursAgo(2) },
-      { severity: 'INFO', title: 'Late-checkout fees uncaptured', meta: '18 folios · Meridian Summit · Leakage', source: 'Leakage', createdAt: hoursAgo(3) },
+      { severity: 'CRITICAL', title: 'Duplicate refund — $2,480', meta: 'Folio #GM-88213 · The Grand Meridian · Fraud', source: 'Fraud', propertyId: byCode.GM.id, createdAt: minutesAgo(2) },
+      { severity: 'CRITICAL', title: 'Void-then-repost pattern detected', meta: 'Agent J. Okafor · The Grand Meridian · Fraud', source: 'Fraud', propertyId: byCode.GM.id, createdAt: minutesAgo(9) },
+      { severity: 'WARNING', title: 'Cash variance at close — $610', meta: 'Front Desk · Meridian Bayside · Audit', source: 'Audit', propertyId: byCode.BS.id, createdAt: minutesAgo(18) },
+      { severity: 'CRITICAL', title: 'After-hours rate override', meta: 'Agent J. Okafor · 03:14 local · Fraud', source: 'Fraud', propertyId: byCode.BS.id, createdAt: minutesAgo(41) },
+      { severity: 'INFO', title: 'Unbilled minibar batch flagged', meta: '42 folios · Meridian Old Town · Leakage', source: 'Leakage', propertyId: byCode.OT.id, createdAt: hoursAgo(1) },
+      { severity: 'WARNING', title: 'Comp room approval missing', meta: 'Agent S. Nakamura · Meridian Old Town · Fraud', source: 'Fraud', propertyId: byCode.OT.id, createdAt: hoursAgo(2) },
+      { severity: 'INFO', title: 'Late-checkout fees uncaptured', meta: '18 folios · Meridian Summit · Leakage', source: 'Leakage', propertyId: byCode.SM.id, createdAt: hoursAgo(3) },
     ],
   });
 
-  // ---- Night audit run + checklist ----
+  // ---- Night audit runs + checklists (one run per property) ----
   await prisma.checklistItem.deleteMany({});
   await prisma.nightAuditRun.deleteMany({});
-  const run = await prisma.nightAuditRun.create({
-    data: {
-      date: new Date(),
-      closeStepsCompleted: 6,
-      closeStepsTotal: 9,
-      openDiscrepancies: 3,
-      discrepancyAmount: 1240,
-      revenuePosted: 612480,
-      transactionCount: 1284,
-      closeProgressPct: 66,
-      estCompletionLabel: '04:20 local',
+  const checklistLabels = [
+    'Room & tax revenue posted',
+    'City ledger reconciled',
+    'Comp & house accounts verified',
+    'Deposits ledger',
+    'Cash drawer close',
+    'Generate manager report',
+  ];
+  const nightAuditByProperty = {
+    GM: {
+      run: { closeStepsCompleted: 6, closeStepsTotal: 9, openDiscrepancies: 3, discrepancyAmount: 1240, revenuePosted: 612480, transactionCount: 1284, closeProgressPct: 66, estCompletionLabel: '04:20 local' },
+      checklist: [
+        { meta: '03:41', status: 'DONE' },
+        { meta: '03:47', status: 'DONE' },
+        { meta: '03:52', status: 'DONE' },
+        { detail: '$630 unmatched', meta: 'Review', status: 'WARNING' },
+        { detail: '$610 short', meta: 'Investigate', status: 'CRITICAL' },
+        { meta: 'Pending', status: 'PENDING' },
+      ],
     },
-  });
-  await prisma.checklistItem.createMany({
-    data: [
-      { nightAuditRunId: run.id, label: 'Room & tax revenue posted', detail: null, meta: '03:41', status: 'DONE', order: 1 },
-      { nightAuditRunId: run.id, label: 'City ledger reconciled', detail: null, meta: '03:47', status: 'DONE', order: 2 },
-      { nightAuditRunId: run.id, label: 'Comp & house accounts verified', detail: null, meta: '03:52', status: 'DONE', order: 3 },
-      { nightAuditRunId: run.id, label: 'Deposits ledger', detail: '$630 unmatched', meta: 'Review', status: 'WARNING', order: 4 },
-      { nightAuditRunId: run.id, label: 'Cash drawer close', detail: '$610 short', meta: 'Investigate', status: 'CRITICAL', order: 5 },
-      { nightAuditRunId: run.id, label: 'Generate manager report', detail: null, meta: 'Pending', status: 'PENDING', order: 6 },
-    ],
-  });
+    BS: {
+      run: { closeStepsCompleted: 9, closeStepsTotal: 9, openDiscrepancies: 0, discrepancyAmount: 0, revenuePosted: 398200, transactionCount: 812, closeProgressPct: 100, estCompletionLabel: 'Complete' },
+      checklist: [
+        { meta: '02:58', status: 'DONE' },
+        { meta: '03:04', status: 'DONE' },
+        { meta: '03:09', status: 'DONE' },
+        { meta: '03:15', status: 'DONE' },
+        { meta: '03:22', status: 'DONE' },
+        { meta: '03:30', status: 'DONE' },
+      ],
+    },
+    OT: {
+      run: { closeStepsCompleted: 7, closeStepsTotal: 9, openDiscrepancies: 1, discrepancyAmount: 340, revenuePosted: 275600, transactionCount: 601, closeProgressPct: 78, estCompletionLabel: '03:55 local' },
+      checklist: [
+        { meta: '03:10', status: 'DONE' },
+        { meta: '03:18', status: 'DONE' },
+        { meta: '03:25', status: 'DONE' },
+        { detail: '$340 unmatched', meta: 'Review', status: 'WARNING' },
+        { meta: '03:40', status: 'DONE' },
+        { meta: 'Pending', status: 'PENDING' },
+      ],
+    },
+    HB: {
+      run: { closeStepsCompleted: 9, closeStepsTotal: 9, openDiscrepancies: 0, discrepancyAmount: 0, revenuePosted: 189400, transactionCount: 402, closeProgressPct: 100, estCompletionLabel: 'Complete' },
+      checklist: [
+        { meta: '02:40', status: 'DONE' },
+        { meta: '02:48', status: 'DONE' },
+        { meta: '02:55', status: 'DONE' },
+        { meta: '03:02', status: 'DONE' },
+        { meta: '03:10', status: 'DONE' },
+        { meta: '03:18', status: 'DONE' },
+      ],
+    },
+    SM: {
+      run: { closeStepsCompleted: 5, closeStepsTotal: 9, openDiscrepancies: 2, discrepancyAmount: 610, revenuePosted: 224800, transactionCount: 470, closeProgressPct: 56, estCompletionLabel: '04:45 local' },
+      checklist: [
+        { meta: '03:20', status: 'DONE' },
+        { meta: '03:28', status: 'DONE' },
+        { detail: '$210 unmatched', meta: 'Review', status: 'WARNING' },
+        { meta: 'Pending', status: 'PENDING' },
+        { detail: '$400 short', meta: 'Investigate', status: 'CRITICAL' },
+        { meta: 'Pending', status: 'PENDING' },
+      ],
+    },
+    RV: {
+      run: { closeStepsCompleted: 8, closeStepsTotal: 9, openDiscrepancies: 1, discrepancyAmount: 180, revenuePosted: 205100, transactionCount: 388, closeProgressPct: 89, estCompletionLabel: '03:30 local' },
+      checklist: [
+        { meta: '03:05', status: 'DONE' },
+        { meta: '03:12', status: 'DONE' },
+        { meta: '03:18', status: 'DONE' },
+        { meta: '03:24', status: 'DONE' },
+        { detail: '$180 unmatched', meta: 'Review', status: 'WARNING' },
+        { meta: '03:35', status: 'DONE' },
+      ],
+    },
+  };
+  for (const code of Object.keys(nightAuditByProperty)) {
+    const { run: runData, checklist } = nightAuditByProperty[code];
+    const propRun = await prisma.nightAuditRun.create({
+      data: { date: new Date(), propertyId: byCode[code].id, ...runData },
+    });
+    await prisma.checklistItem.createMany({
+      data: checklist.map((item, i) => ({
+        nightAuditRunId: propRun.id,
+        label: checklistLabels[i],
+        detail: item.detail ?? null,
+        meta: item.meta,
+        status: item.status,
+        order: i + 1,
+      })),
+    });
+  }
 
   // ---- Report definitions ----
   await prisma.reportDefinition.deleteMany({});
@@ -270,8 +339,26 @@ async function main() {
     },
   });
 
+  // ---- Weekly financials (Dashboard's revenue vs. recovered-leakage chart) ----
+  await prisma.weeklyFinancials.deleteMany({});
+  const weeklyFinancials = [
+    { weekIndex: 0, weekLabel: 'Wk 1', revenue: 4120000, leakageRecovered: 13800 },
+    { weekIndex: 1, weekLabel: 'Wk 2', revenue: 4180000, leakageRecovered: 14200 },
+    { weekIndex: 2, weekLabel: 'Wk 3', revenue: 4050000, leakageRecovered: 15100 },
+    { weekIndex: 3, weekLabel: 'Wk 4', revenue: 4310000, leakageRecovered: 15800 },
+    { weekIndex: 4, weekLabel: 'Wk 5', revenue: 4420000, leakageRecovered: 16400 },
+    { weekIndex: 5, weekLabel: 'Wk 6', revenue: 4260000, leakageRecovered: 15200 },
+    { weekIndex: 6, weekLabel: 'Wk 7', revenue: 4580000, leakageRecovered: 17100 },
+    { weekIndex: 7, weekLabel: 'Wk 8', revenue: 4690000, leakageRecovered: 17800 },
+    { weekIndex: 8, weekLabel: 'Wk 9', revenue: 4530000, leakageRecovered: 16900 },
+    { weekIndex: 9, weekLabel: 'Wk 10', revenue: 4750000, leakageRecovered: 18400 },
+    { weekIndex: 10, weekLabel: 'Wk 11', revenue: 4820000, leakageRecovered: 19100 },
+    { weekIndex: 11, weekLabel: 'Wk 12', revenue: 4910000, leakageRecovered: 19800 },
+  ];
+  await prisma.weeklyFinancials.createMany({ data: weeklyFinancials });
+
   console.log(
-    `Seeded: 2 users (${propertyRecords.length + 1} property-access grants), ${propertyRecords.length} properties, ${txnRows.length} transactions, 6 employees, 6 fraud cases, 5 leakage categories, 7 alerts, 1 night audit run (6 checklist items), 6 report definitions, 3 insights, ${riskRows.length} risk scores.`
+    `Seeded: 2 users (${propertyRecords.length + 1} property-access grants), ${propertyRecords.length} properties, ${txnRows.length} transactions, 6 employees, 6 fraud cases, 5 leakage categories, 7 alerts, ${Object.keys(nightAuditByProperty).length} night audit runs (6 checklist items each), 6 report definitions, 3 insights, ${riskRows.length} risk scores, ${weeklyFinancials.length} weekly financials rows.`
   );
 }
 

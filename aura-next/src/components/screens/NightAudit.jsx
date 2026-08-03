@@ -9,20 +9,37 @@ function shadeClass(status) {
   return '';
 }
 
-export default function NightAudit() {
+export default function NightAudit({ activePropertyId }) {
   const [run, setRun] = useState(null);
   const [error, setError] = useState('');
   const [updatingId, setUpdatingId] = useState(null);
+  const [loadedFor, setLoadedFor] = useState(activePropertyId);
+
+  if (loadedFor !== activePropertyId) {
+    setLoadedFor(activePropertyId);
+    setRun(null);
+  }
 
   useEffect(() => {
-    fetch('/api/night-audit')
-      .then((res) => {
+    let cancelled = false;
+    const qs = activePropertyId ? `?propertyId=${activePropertyId}` : '';
+    async function load() {
+      try {
+        const res = await fetch(`/api/night-audit${qs}`);
         if (!res.ok) throw new Error('Failed to load night audit data');
-        return res.json();
-      })
-      .then((json) => setRun(json.run))
-      .catch((err) => setError(err.message));
-  }, []);
+        const json = await res.json();
+        if (cancelled) return;
+        setRun(json.run);
+        setError('');
+      } catch (err) {
+        if (!cancelled) setError(err.message);
+      }
+    }
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [activePropertyId]);
 
   async function markDone(id) {
     setUpdatingId(id);

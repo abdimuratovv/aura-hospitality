@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Icon from '../Icon.jsx';
-import { timeAgo } from '../../lib/format.js';
+import { timeAgo, buildTrendPaths } from '../../lib/format.js';
 
 function cellColor(v) {
   if (v < 0.33) return `rgba(95,191,153,${0.25 + v})`;
@@ -75,6 +75,11 @@ export default function Dashboard({ goAlerts, activePropertyId }) {
   if (!data) return <div className="text-sm text-faint">Loading…</div>;
 
   const s = data.snapshot;
+  const weekly = data.weeklyFinancials ?? [];
+  const revenueTrend = buildTrendPaths(weekly.map((w) => w.revenue));
+  const recoveredTrend = buildTrendPaths(weekly.map((w) => w.leakageRecovered));
+  const lastRevenuePoint = revenueTrend.points.at(-1);
+  const axisLabels = weekly.filter((_, i) => i % 2 === 0).map((w) => w.weekLabel);
   const statCards = [
     { label: 'Portfolio Revenue', icon: 'revenue', iconC: 'text-success', iconBg: 'bg-success-bg', value: `$${(s.portfolioRevenue / 1e6).toFixed(2)}M`, badge: `▲ ${s.portfolioRevenueChangePct}%`, badgeC: 'text-success', badgeBg: 'bg-success-bg', note: 'vs last week' },
     { label: 'Active Fraud Alerts', icon: 'shield', iconC: 'text-critical', iconBg: 'bg-critical-bg', value: String(s.activeFraudAlerts), badge: `${s.activeFraudAlertsCritical} critical`, badgeC: 'text-critical', badgeBg: 'bg-critical-bg', note: 'needs review' },
@@ -122,16 +127,19 @@ export default function Dashboard({ goAlerts, activePropertyId }) {
             <line x1="0" y1="50" x2="640" y2="50" stroke="rgba(60,70,110,.08)" />
             <line x1="0" y1="110" x2="640" y2="110" stroke="rgba(60,70,110,.08)" />
             <line x1="0" y1="170" x2="640" y2="170" stroke="rgba(60,70,110,.08)" />
-            <path d="M0,170 C50,160 90,130 140,138 C200,148 230,96 300,104 C360,110 380,66 440,74 C500,82 540,44 640,52 L640,240 L0,240 Z" fill="url(#aRev)" />
-            <path d="M0,170 C50,160 90,130 140,138 C200,148 230,96 300,104 C360,110 380,66 440,74 C500,82 540,44 640,52" fill="none" stroke="#4f8cff" strokeWidth="2.5" strokeLinecap="round" />
-            <path d="M0,206 C60,202 100,190 150,192 C210,194 250,172 310,176 C370,180 400,160 460,164 C520,168 560,150 640,154 L640,240 L0,240 Z" fill="url(#aRec)" />
-            <path d="M0,206 C60,202 100,190 150,192 C210,194 250,172 310,176 C370,180 400,160 460,164 C520,168 560,150 640,154" fill="none" stroke="#46d2c8" strokeWidth="2.5" strokeLinecap="round" />
-            <circle cx="640" cy="52" r="4.5" fill="#4f8cff" stroke="#fff" strokeWidth="2" />
+            <path d={revenueTrend.areaPath} fill="url(#aRev)" />
+            <path d={revenueTrend.linePath} fill="none" stroke="#4f8cff" strokeWidth="2.5" strokeLinecap="round" />
+            <path d={recoveredTrend.areaPath} fill="url(#aRec)" />
+            <path d={recoveredTrend.linePath} fill="none" stroke="#46d2c8" strokeWidth="2.5" strokeLinecap="round" />
+            {lastRevenuePoint && (
+              <circle cx={lastRevenuePoint.x} cy={lastRevenuePoint.y} r="4.5" fill="#4f8cff" stroke="#fff" strokeWidth="2" />
+            )}
           </svg>
           <div className="mt-2.5 flex justify-between text-[11px] text-hairline">
-            <span>Wk 1</span><span>Wk 3</span><span>Wk 5</span><span>Wk 7</span><span>Wk 9</span><span>Wk 11</span>
+            {axisLabels.map((label) => (
+              <span key={label}>{label}</span>
+            ))}
           </div>
-          <p className="mt-2 text-[11px] text-faint">Illustrative trend — weekly time-series not tracked yet.</p>
         </div>
 
         <div className="glass-card p-6">

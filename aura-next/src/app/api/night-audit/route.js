@@ -1,14 +1,21 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db.js';
 import { getSession } from '@/lib/session.js';
+import { getAccessiblePropertyIds, resolvePropertyIds } from '@/lib/access.js';
+import { serializeNightAuditRun } from '@/lib/serializers.js';
 
-export async function GET() {
+export async function GET(request) {
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  const { searchParams } = new URL(request.url);
+  const accessibleIds = await getAccessiblePropertyIds(session.id);
+  const propertyIds = resolvePropertyIds(accessibleIds, searchParams.get('propertyId'));
+
   const run = await prisma.nightAuditRun.findFirst({
+    where: { propertyId: { in: propertyIds } },
     orderBy: { date: 'desc' },
     include: { checklist: { orderBy: { order: 'asc' } } },
   });
@@ -17,25 +24,5 @@ export async function GET() {
     return NextResponse.json({ run: null });
   }
 
-  return NextResponse.json({
-    run: {
-      id: run.id,
-      date: run.date,
-      closeStepsCompleted: run.closeStepsCompleted,
-      closeStepsTotal: run.closeStepsTotal,
-      openDiscrepancies: run.openDiscrepancies,
-      discrepancyAmount: Number(run.discrepancyAmount),
-      revenuePosted: Number(run.revenuePosted),
-      transactionCount: run.transactionCount,
-      closeProgressPct: run.closeProgressPct,
-      estCompletionLabel: run.estCompletionLabel,
-      checklist: run.checklist.map((c) => ({
-        id: c.id,
-        label: c.label,
-        detail: c.detail,
-        meta: c.meta,
-        status: c.status,
-      })),
-    },
-  });
+  return NextResponse.json({ run: serializeNightAuditRun(run) });
 }

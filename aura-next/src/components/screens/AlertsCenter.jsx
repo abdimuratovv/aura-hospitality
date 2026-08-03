@@ -8,21 +8,38 @@ const ACTION_LABEL = { OPEN: 'Acknowledge', ACKNOWLEDGED: 'Resolve' };
 
 const SEVERITIES = ['CRITICAL', 'WARNING', 'INFO'];
 
-export default function AlertsCenter() {
+export default function AlertsCenter({ activePropertyId }) {
   const [rows, setRows] = useState(null);
   const [error, setError] = useState('');
   const [updatingId, setUpdatingId] = useState(null);
   const [severityFilter, setSeverityFilter] = useState(null);
+  const [loadedFor, setLoadedFor] = useState(activePropertyId);
+
+  if (loadedFor !== activePropertyId) {
+    setLoadedFor(activePropertyId);
+    setRows(null);
+  }
 
   useEffect(() => {
-    fetch('/api/alerts')
-      .then((res) => {
+    let cancelled = false;
+    const qs = activePropertyId ? `?propertyId=${activePropertyId}` : '';
+    async function load() {
+      try {
+        const res = await fetch(`/api/alerts${qs}`);
         if (!res.ok) throw new Error('Failed to load alerts');
-        return res.json();
-      })
-      .then((json) => setRows(json.rows))
-      .catch((err) => setError(err.message));
-  }, []);
+        const json = await res.json();
+        if (cancelled) return;
+        setRows(json.rows);
+        setError('');
+      } catch (err) {
+        if (!cancelled) setError(err.message);
+      }
+    }
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [activePropertyId]);
 
   async function advance(alert) {
     const nextStatus = NEXT_STATUS[alert.status];

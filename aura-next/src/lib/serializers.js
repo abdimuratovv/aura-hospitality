@@ -22,3 +22,26 @@ export function serializeAlert(a) {
     createdAt: a.createdAt,
   };
 }
+
+export function serializeNightAuditRun(run) {
+  return {
+    id: run.id,
+    date: run.date,
+    propertyId: run.propertyId,
+    closeStepsCompleted: run.closeStepsCompleted,
+    closeStepsTotal: run.closeStepsTotal,
+    openDiscrepancies: run.openDiscrepancies,
+    discrepancyAmount: Number(run.discrepancyAmount),
+    revenuePosted: Number(run.revenuePosted),
+    transactionCount: run.transactionCount,
+    closeProgressPct: run.closeProgressPct,
+    estCompletionLabel: run.estCompletionLabel,
+    checklist: run.checklist.map((c) => ({
+      id: c.id,
+      label: c.label,
+      detail: c.detail,
+      meta: c.meta,
+      status: c.status,
+    })),
+  };
+}

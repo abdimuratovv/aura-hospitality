@@ -39,7 +39,7 @@ export async function GET(request) {
       orderBy: { confidence: 'desc' },
     }),
     prisma.alert.findMany({
-      where: { OR: [{ title: insensitive }, { meta: insensitive }] },
+      where: { propertyId: { in: propertyIds }, OR: [{ title: insensitive }, { meta: insensitive }] },
       take: RESULT_LIMIT,
       orderBy: { createdAt: 'desc' },
     }),

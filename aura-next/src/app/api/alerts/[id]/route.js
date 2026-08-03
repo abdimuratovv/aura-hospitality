@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db.js';
 import { getSession } from '@/lib/session.js';
+import { getAccessiblePropertyIds } from '@/lib/access.js';
 import { serializeAlert } from '@/lib/serializers.js';
 
 const VALID_STATUSES = ['OPEN', 'ACKNOWLEDGED', 'RESOLVED'];
@@ -20,6 +21,11 @@ export async function PATCH(request, { params }) {
 
   const existing = await prisma.alert.findUnique({ where: { id } });
   if (!existing) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
+
+  const propertyIds = await getAccessiblePropertyIds(session.id);
+  if (!propertyIds.includes(existing.propertyId)) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 

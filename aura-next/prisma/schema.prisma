@@ -25,25 +25,27 @@ model User {
 }
 
 model Property {
-  id           String        @id @default(cuid())
-  code         String        @unique
-  name         String
-  shortName    String
-  transactions Transaction[]
-  employees    Employee[]
-  fraudCases   FraudCase[]
-  riskScores   PropertyRiskScore[]
-  users        User[]
-  createdAt    DateTime      @default(now())
+  id             String              @id @default(cuid())
+  code           String              @unique
+  name           String
+  shortName      String
+  transactions   Transaction[]
+  employees      Employee[]
+  fraudCases     FraudCase[]
+  riskScores     PropertyRiskScore[]
+  alerts         Alert[]
+  nightAuditRuns NightAuditRun[]
+  users          User[]
+  createdAt      DateTime            @default(now())
 
   userAccess UserProperty[]
 }
 
 // Which properties a user is permitted to see data for (transactions, employees,
-// fraud cases, risk heatmap). A user with no rows here sees nothing for those
-// screens — access is opt-in, not opt-out. Portfolio-wide entities (DashboardSnapshot,
-// Alert, Insight, ReportDefinition) aren't scoped by this yet since they don't carry
-// a propertyId in the schema.
+// fraud cases, risk heatmap, alerts, night audit runs). A user with no rows here
+// sees nothing for those screens — access is opt-in, not opt-out. Portfolio-wide
+// entities (DashboardSnapshot, Insight, ReportDefinition, WeeklyFinancials) aren't
+// scoped by this yet since they don't carry a propertyId in the schema.
 model UserProperty {
   id         String   @id @default(cuid())
   userId     String
@@ -163,7 +165,12 @@ model Alert {
   source   String
   status   AlertStatus   @default(OPEN)
 
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id])
+
   createdAt DateTime @default(now())
+
+  @@index([propertyId])
 }
 
 model NightAuditRun {
@@ -178,9 +185,14 @@ model NightAuditRun {
   closeProgressPct     Int
   estCompletionLabel   String
 
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id])
+
   checklist ChecklistItem[]
 
   createdAt DateTime @default(now())
+
+  @@index([propertyId])
 }
 
 enum ChecklistStatus {
@@ -254,4 +266,19 @@ model DashboardSnapshot {
   nightAuditPct             Float
   nightAuditExceptions      Int
   updatedAt                 DateTime @updatedAt
+}
+
+// Portfolio-wide weekly revenue vs. recovered-leakage trend backing the Dashboard's
+// "Revenue vs. Recovered Leakage" chart. Wave 2 data-pipeline slice: replaces the
+// hand-drawn illustrative SVG curve with a real (still portfolio-wide, not
+// property-scoped) time series. Not derived from Transaction/LeakageCategory rows —
+// there's no real weekly close process feeding this yet, so it's seeded historical
+// data rather than a live rollup, same rationale as DashboardSnapshot above.
+model WeeklyFinancials {
+  id                String   @id @default(cuid())
+  weekIndex         Int      @unique
+  weekLabel         String
+  revenue           Decimal  @db.Decimal(12, 2)
+  leakageRecovered  Decimal  @db.Decimal(12, 2)
+  createdAt         DateTime @default(now())
 }
