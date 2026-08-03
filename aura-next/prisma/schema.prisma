@@ -255,21 +255,18 @@ model PropertyRiskScore {
   @@unique([propertyId, dayIndex])
 }
 
-// Portfolio-wide KPI snapshot for the dashboard stat cards. In the target
-// architecture these would be computed by an OLAP layer (ClickHouse) over
-// the full transaction history, not derived from the small OLTP sample in
-// this dev database — so for now this is a single seeded snapshot row
-// rather than a live aggregate.
+// Portfolio-wide "Portfolio Revenue" stat card only, as of 2026-08-04. In the target
+// architecture this would be computed by an OLAP layer (ClickHouse) over the full
+// transaction history, not derived from the small (32-row) OLTP sample in this dev
+// database — summing those would produce a number unrelated to real portfolio scale
+// — so this one figure stays a seeded stand-in until that layer exists. The other
+// three Dashboard stat cards (fraud alerts, revenue leakage, night audit) used to
+// live here too but are now computed live from FraudCase/LeakageCategory/NightAuditRun
+// in `/api/dashboard` — see that route.
 model DashboardSnapshot {
   id                        String   @id @default(cuid())
   portfolioRevenue          Decimal  @db.Decimal(12, 2)
   portfolioRevenueChangePct Float
-  activeFraudAlerts         Int
-  activeFraudAlertsCritical Int
-  revenueLeakage            Decimal  @db.Decimal(12, 2)
-  revenueLeakageRecovered   Decimal  @db.Decimal(12, 2)
-  nightAuditPct             Float
-  nightAuditExceptions      Int
   updatedAt                 DateTime @updatedAt
 }
 

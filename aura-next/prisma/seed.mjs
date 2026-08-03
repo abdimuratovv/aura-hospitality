@@ -324,18 +324,13 @@ async function main() {
   }
   await prisma.propertyRiskScore.createMany({ data: riskRows });
 
-  // ---- Dashboard snapshot ----
+  // ---- Dashboard snapshot (Portfolio Revenue only — the other 3 stat cards are
+  // computed live from FraudCase/LeakageCategory/NightAuditRun in /api/dashboard) ----
   await prisma.dashboardSnapshot.deleteMany({});
   await prisma.dashboardSnapshot.create({
     data: {
       portfolioRevenue: 4820000,
       portfolioRevenueChangePct: 6.4,
-      activeFraudAlerts: 12,
-      activeFraudAlertsCritical: 3,
-      revenueLeakage: 184000,
-      revenueLeakageRecovered: 71000,
-      nightAuditPct: 98.2,
-      nightAuditExceptions: 3,
     },
   });
 
