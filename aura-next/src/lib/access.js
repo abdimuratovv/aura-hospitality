@@ -7,3 +7,13 @@ export async function getAccessiblePropertyIds(userId) {
   });
   return rows.map((r) => r.propertyId);
 }
+
+// Narrows an already-computed accessible-property list down to a single requested
+// property, ignoring the request if it falls outside what the caller can see —
+// the security boundary is always the accessible set, this is just a display filter.
+export function resolvePropertyIds(accessiblePropertyIds, requestedPropertyId) {
+  if (requestedPropertyId && accessiblePropertyIds.includes(requestedPropertyId)) {
+    return [requestedPropertyId];
+  }
+  return accessiblePropertyIds;
+}

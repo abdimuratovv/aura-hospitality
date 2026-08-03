@@ -7,20 +7,37 @@ const STATUS_LABEL = { OPEN: 'Open', INVESTIGATING: 'Investigating', RESOLVED: '
 const STATUS_OPTIONS = Object.keys(STATUS_LABEL);
 const OPEN_STATUSES = ['OPEN', 'INVESTIGATING'];
 
-export default function FraudDetection() {
+export default function FraudDetection({ activePropertyId }) {
   const [rows, setRows] = useState(null);
   const [error, setError] = useState('');
   const [updatingId, setUpdatingId] = useState(null);
+  const [loadedFor, setLoadedFor] = useState(activePropertyId);
+
+  if (loadedFor !== activePropertyId) {
+    setLoadedFor(activePropertyId);
+    setRows(null);
+  }
 
   useEffect(() => {
-    fetch('/api/fraud-cases')
-      .then((res) => {
+    let cancelled = false;
+    const qs = activePropertyId ? `?propertyId=${activePropertyId}` : '';
+    async function load() {
+      try {
+        const res = await fetch(`/api/fraud-cases${qs}`);
         if (!res.ok) throw new Error('Failed to load fraud cases');
-        return res.json();
-      })
-      .then((json) => setRows(json.rows))
-      .catch((err) => setError(err.message));
-  }, []);
+        const json = await res.json();
+        if (cancelled) return;
+        setRows(json.rows);
+        setError('');
+      } catch (err) {
+        if (!cancelled) setError(err.message);
+      }
+    }
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [activePropertyId]);
 
   async function updateStatus(id, status) {
     setUpdatingId(id);

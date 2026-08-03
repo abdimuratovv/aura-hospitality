@@ -1,15 +1,17 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db.js';
 import { getSession } from '@/lib/session.js';
-import { getAccessiblePropertyIds } from '@/lib/access.js';
+import { getAccessiblePropertyIds, resolvePropertyIds } from '@/lib/access.js';
 
-export async function GET() {
+export async function GET(request) {
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const propertyIds = await getAccessiblePropertyIds(session.id);
+  const { searchParams } = new URL(request.url);
+  const accessibleIds = await getAccessiblePropertyIds(session.id);
+  const propertyIds = resolvePropertyIds(accessibleIds, searchParams.get('propertyId'));
 
   const [snapshot, insights, recentAlerts, riskScores] = await Promise.all([
     prisma.dashboardSnapshot.findFirst({ orderBy: { updatedAt: 'desc' } }),

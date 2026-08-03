@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db.js';
 import { getSession } from '@/lib/session.js';
-import { getAccessiblePropertyIds } from '@/lib/access.js';
+import { getAccessiblePropertyIds, resolvePropertyIds } from '@/lib/access.js';
+
+const VALID_FLAGS = ['CLEARED', 'FLAGGED', 'REVIEW'];
 
 export async function GET(request) {
   const session = await getSession();
@@ -12,11 +14,21 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const page = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10) || 1);
   const pageSize = Math.min(50, Math.max(1, parseInt(searchParams.get('pageSize') ?? '8', 10) || 8));
+  const type = searchParams.get('type') || undefined;
+  const flag = VALID_FLAGS.includes(searchParams.get('flag')) ? searchParams.get('flag') : undefined;
+  const q = searchParams.get('q')?.trim() || undefined;
 
-  const propertyIds = await getAccessiblePropertyIds(session.id);
-  const where = { propertyId: { in: propertyIds } };
+  const accessibleIds = await getAccessiblePropertyIds(session.id);
+  const propertyIds = resolvePropertyIds(accessibleIds, searchParams.get('propertyId'));
 
-  const [rows, total] = await Promise.all([
+  const where = {
+    propertyId: { in: propertyIds },
+    ...(type ? { type } : {}),
+    ...(flag ? { flag } : {}),
+    ...(q ? { OR: [{ folioId: { contains: q, mode: 'insensitive' } }, { agent: { contains: q, mode: 'insensitive' } }] } : {}),
+  };
+
+  const [rows, total, typeRows] = await Promise.all([
     prisma.transaction.findMany({
       where,
       orderBy: { postedAt: 'desc' },
@@ -25,6 +37,12 @@ export async function GET(request) {
       include: { property: true },
     }),
     prisma.transaction.count({ where }),
+    prisma.transaction.findMany({
+      where: { propertyId: { in: accessibleIds } },
+      select: { type: true },
+      distinct: ['type'],
+      orderBy: { type: 'asc' },
+    }),
   ]);
 
   return NextResponse.json({
@@ -41,5 +59,6 @@ export async function GET(request) {
     total,
     page,
     pageSize,
+    types: typeRows.map((r) => r.type),
   });
 }

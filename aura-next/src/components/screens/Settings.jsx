@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { initialsFromName } from '../../lib/format.js';
 
-const navItems = ['Profile', 'Security & Access', 'Notifications', 'Detection Rules', 'Integrations', 'Data & Privacy'];
+const NAV_ITEMS = ['Profile', 'Security & Access', 'Notifications', 'Detection Rules', 'Integrations', 'Data & Privacy'];
+const UNBUILT_TABS = ['Detection Rules', 'Integrations', 'Data & Privacy'];
 
 function Toggle({ on, onClick }) {
   return (
@@ -24,6 +25,7 @@ const field = 'soft-input-plain px-3.5 py-3 text-sm';
 const disabledField = `${field} cursor-not-allowed opacity-70`;
 
 export default function Settings() {
+  const [tab, setTab] = useState('Profile');
   const [profile, setProfile] = useState(null);
   const [name, setName] = useState('');
   const [error, setError] = useState('');
@@ -71,19 +73,22 @@ export default function Settings() {
   if (error) return <div className="text-sm text-critical">{error}</div>;
   if (!profile) return <div className="text-sm text-faint">Loading…</div>;
 
+  const showSaveBar = !UNBUILT_TABS.includes(tab);
+
   return (
     <div className="grid animate-fade-up grid-cols-1 gap-4 lg:grid-cols-[236px_1fr]">
       <div className="glass-card h-fit p-3">
         <div className="flex flex-col gap-1">
-          {navItems.map((label, i) => (
+          {NAV_ITEMS.map((label) => (
             <span
               key={label}
+              onClick={() => setTab(label)}
               className={
-                i === 0
+                tab === label
                   ? 'cursor-pointer rounded-xl border border-[rgba(79,140,255,.22)] px-3.5 py-2.5 text-[13.5px] font-semibold text-brand shadow-[inset_0_1px_1px_rgba(255,255,255,.7)]'
                   : 'cursor-pointer rounded-xl px-3.5 py-2.5 text-[13.5px] font-medium text-muted'
               }
-              style={i === 0 ? { background: 'linear-gradient(150deg,rgba(79,140,255,.14),rgba(79,140,255,.05) 60%)' } : undefined}
+              style={tab === label ? { background: 'linear-gradient(150deg,rgba(79,140,255,.14),rgba(79,140,255,.05) 60%)' } : undefined}
             >
               {label}
             </span>
@@ -92,65 +97,87 @@ export default function Settings() {
       </div>
 
       <div className="glass-card p-7">
-        <h3 className="mb-5.5 text-[17px] font-semibold">Profile</h3>
-        <div className="mb-6.5 flex items-center gap-4">
-          <span className="flex h-[60px] w-[60px] items-center justify-center rounded-full text-xl font-semibold text-white" style={{ background: 'linear-gradient(160deg,#6b9,#489)' }}>
-            {initialsFromName(profile.name)}
-          </span>
-          <div>
-            <div className="text-[15px] font-semibold">{profile.name}</div>
-            <div className="mb-2 text-[13px] text-faint">{profile.role} · Meridian Hotels Group</div>
-            <button className="btn-outline px-3.5 py-1.5 text-[12.5px] font-semibold text-ink-soft">Change photo</button>
-          </div>
-        </div>
+        {tab === 'Profile' && (
+          <>
+            <h3 className="mb-5.5 text-[17px] font-semibold">Profile</h3>
+            <div className="mb-6.5 flex items-center gap-4">
+              <span className="flex h-[60px] w-[60px] items-center justify-center rounded-full text-xl font-semibold text-white" style={{ background: 'linear-gradient(160deg,#6b9,#489)' }}>
+                {initialsFromName(profile.name)}
+              </span>
+              <div>
+                <div className="text-[15px] font-semibold">{profile.name}</div>
+                <div className="mb-2 text-[13px] text-faint">{profile.role} · Meridian Hotels Group</div>
+                <button className="btn-outline px-3.5 py-1.5 text-[12.5px] font-semibold text-ink-soft">Change photo</button>
+              </div>
+            </div>
 
-        <div className="mb-6.5 grid grid-cols-1 gap-4.5 lg:grid-cols-2">
-          <div>
-            <label className="mb-1.5 block text-[12.5px] font-semibold text-muted">Full name</label>
-            <input value={name} onChange={(e) => setName(e.target.value)} className={field} />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-[12.5px] font-semibold text-muted">Work email</label>
-            <input value={profile.email} readOnly className={disabledField} />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-[12.5px] font-semibold text-muted">Role</label>
-            <input value={profile.role} readOnly className={disabledField} />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-[12.5px] font-semibold text-muted">Default property</label>
-            <input value={profile.defaultProperty?.name ?? '—'} readOnly className={disabledField} />
-          </div>
-        </div>
+            <div className="grid grid-cols-1 gap-4.5 lg:grid-cols-2">
+              <div>
+                <label className="mb-1.5 block text-[12.5px] font-semibold text-muted">Full name</label>
+                <input value={name} onChange={(e) => setName(e.target.value)} className={field} />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-[12.5px] font-semibold text-muted">Work email</label>
+                <input value={profile.email} readOnly className={disabledField} />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-[12.5px] font-semibold text-muted">Role</label>
+                <input value={profile.role} readOnly className={disabledField} />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-[12.5px] font-semibold text-muted">Default property</label>
+                <input value={profile.defaultProperty?.name ?? '—'} readOnly className={disabledField} />
+              </div>
+            </div>
+          </>
+        )}
 
-        <div className="border-t border-[rgba(60,70,110,.08)] pt-5">
-          <div className="flex items-center justify-between py-3">
-            <div><div className="text-sm font-semibold">Two-factor authentication</div><div className="text-[12.5px] text-faint">Required for all finance roles</div></div>
-            <Toggle on={profile.twoFactorEnabled} onClick={() => toggle('twoFactorEnabled')} />
-          </div>
-          <div className="flex items-center justify-between py-3">
-            <div><div className="text-sm font-semibold">Critical fraud alerts by email</div><div className="text-[12.5px] text-faint">Real-time when confidence &gt; 90%</div></div>
-            <Toggle on={profile.criticalAlertsEmail} onClick={() => toggle('criticalAlertsEmail')} />
-          </div>
-          <div className="flex items-center justify-between py-3">
-            <div><div className="text-sm font-semibold">Weekly executive digest</div><div className="text-[12.5px] text-faint">Monday 07:00 · portfolio summary</div></div>
-            <Toggle on={profile.weeklyDigest} onClick={() => toggle('weeklyDigest')} />
-          </div>
-        </div>
+        {tab === 'Security & Access' && (
+          <>
+            <h3 className="mb-5.5 text-[17px] font-semibold">Security & Access</h3>
+            <div className="flex items-center justify-between py-3">
+              <div><div className="text-sm font-semibold">Two-factor authentication</div><div className="text-[12.5px] text-faint">Required for all finance roles</div></div>
+              <Toggle on={profile.twoFactorEnabled} onClick={() => toggle('twoFactorEnabled')} />
+            </div>
+          </>
+        )}
 
-        <div className="mt-6 flex items-center gap-3">
-          <button onClick={save} disabled={saveState === 'saving'} className="btn-primary px-6.5 py-3.5 text-sm disabled:opacity-60">
-            {saveState === 'saving' ? 'Saving…' : 'Save changes'}
-          </button>
-          <button
-            onClick={() => { setName(profile.name); }}
-            className="rounded-full border border-white/30 px-6.5 py-3.5 text-sm font-medium text-muted"
-            style={{ background: 'linear-gradient(145deg,rgba(255,255,255,.16),rgba(255,255,255,.02) 60%)' }}
-          >
-            Cancel
-          </button>
-          {saveState === 'saved' && <span className="text-[13px] font-medium text-success">Saved</span>}
-        </div>
+        {tab === 'Notifications' && (
+          <>
+            <h3 className="mb-5.5 text-[17px] font-semibold">Notifications</h3>
+            <div className="flex items-center justify-between py-3">
+              <div><div className="text-sm font-semibold">Critical fraud alerts by email</div><div className="text-[12.5px] text-faint">Real-time when confidence &gt; 90%</div></div>
+              <Toggle on={profile.criticalAlertsEmail} onClick={() => toggle('criticalAlertsEmail')} />
+            </div>
+            <div className="flex items-center justify-between py-3">
+              <div><div className="text-sm font-semibold">Weekly executive digest</div><div className="text-[12.5px] text-faint">Monday 07:00 · portfolio summary</div></div>
+              <Toggle on={profile.weeklyDigest} onClick={() => toggle('weeklyDigest')} />
+            </div>
+          </>
+        )}
+
+        {UNBUILT_TABS.includes(tab) && (
+          <>
+            <h3 className="mb-2 text-[17px] font-semibold">{tab}</h3>
+            <p className="text-[13.5px] text-faint">Not built yet — there&apos;s no backing configuration for this section in the current release.</p>
+          </>
+        )}
+
+        {showSaveBar && (
+          <div className="mt-6 flex items-center gap-3 border-t border-[rgba(60,70,110,.08)] pt-5">
+            <button onClick={save} disabled={saveState === 'saving'} className="btn-primary px-6.5 py-3.5 text-sm disabled:opacity-60">
+              {saveState === 'saving' ? 'Saving…' : 'Save changes'}
+            </button>
+            <button
+              onClick={() => { setName(profile.name); }}
+              className="rounded-full border border-white/30 px-6.5 py-3.5 text-sm font-medium text-muted"
+              style={{ background: 'linear-gradient(145deg,rgba(255,255,255,.16),rgba(255,255,255,.02) 60%)' }}
+            >
+              Cancel
+            </button>
+            {saveState === 'saved' && <span className="text-[13px] font-medium text-success">Saved</span>}
+          </div>
+        )}
       </div>
     </div>
   );

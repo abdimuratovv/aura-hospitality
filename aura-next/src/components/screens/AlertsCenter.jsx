@@ -6,10 +6,13 @@ import { ALERT_SEVERITY_META, timeAgo } from '../../lib/format.js';
 const NEXT_STATUS = { OPEN: 'ACKNOWLEDGED', ACKNOWLEDGED: 'RESOLVED' };
 const ACTION_LABEL = { OPEN: 'Acknowledge', ACKNOWLEDGED: 'Resolve' };
 
+const SEVERITIES = ['CRITICAL', 'WARNING', 'INFO'];
+
 export default function AlertsCenter() {
   const [rows, setRows] = useState(null);
   const [error, setError] = useState('');
   const [updatingId, setUpdatingId] = useState(null);
+  const [severityFilter, setSeverityFilter] = useState(null);
 
   useEffect(() => {
     fetch('/api/alerts')
@@ -44,25 +47,38 @@ export default function AlertsCenter() {
   const counts = { CRITICAL: 0, WARNING: 0, INFO: 0 };
   for (const a of rows ?? []) counts[a.severity] = (counts[a.severity] ?? 0) + 1;
   const total = rows?.length ?? 0;
+  const visibleRows = severityFilter ? rows?.filter((a) => a.severity === severityFilter) : rows;
+
+  const activePillClass = 'cursor-pointer rounded-xl border border-white/80 px-4 py-2.5 text-sm font-semibold text-brand';
+  const activePillStyle = { background: 'linear-gradient(150deg,rgba(255,255,255,.95),rgba(255,255,255,.55))', boxShadow: 'inset 0 1px 1px rgba(255,255,255,.9),0 8px 18px -12px rgba(79,140,255,.5)' };
 
   return (
     <div className="animate-fade-up">
       <div className="mb-4 flex flex-wrap gap-2">
         <span
-          className="cursor-pointer rounded-xl border border-white/80 px-4 py-2.5 text-sm font-semibold text-brand"
-          style={{ background: 'linear-gradient(150deg,rgba(255,255,255,.95),rgba(255,255,255,.55))', boxShadow: 'inset 0 1px 1px rgba(255,255,255,.9),0 8px 18px -12px rgba(79,140,255,.5)' }}
+          onClick={() => setSeverityFilter(null)}
+          className={!severityFilter ? activePillClass : 'pill px-4 py-2.5 text-sm'}
+          style={!severityFilter ? activePillStyle : undefined}
         >
           All · {total}
         </span>
-        <span className="pill px-4 py-2.5 text-sm">Critical · {counts.CRITICAL}</span>
-        <span className="pill px-4 py-2.5 text-sm">Warning · {counts.WARNING}</span>
-        <span className="pill px-4 py-2.5 text-sm">Info · {counts.INFO}</span>
+        {SEVERITIES.map((sev) => (
+          <span
+            key={sev}
+            onClick={() => setSeverityFilter(sev)}
+            className={severityFilter === sev ? activePillClass : 'pill px-4 py-2.5 text-sm'}
+            style={severityFilter === sev ? activePillStyle : undefined}
+          >
+            {sev === 'CRITICAL' ? 'Critical' : sev === 'WARNING' ? 'Warning' : 'Info'} · {counts[sev]}
+          </span>
+        ))}
       </div>
       <div className="glass-card p-2">
         {error && <div className="px-4 py-6 text-sm text-critical">{error}</div>}
         {!error && !rows && <div className="px-4 py-6 text-sm text-faint">Loading…</div>}
+        {!error && rows && visibleRows.length === 0 && <div className="px-4 py-6 text-sm text-faint">No alerts match this filter.</div>}
 
-        {rows?.map((a) => {
+        {visibleRows?.map((a) => {
           const meta = ALERT_SEVERITY_META[a.severity];
           const actionLabel = ACTION_LABEL[a.status];
           return (

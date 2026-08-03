@@ -40,19 +40,36 @@ const INSIGHT_META = {
 
 const ALERT_DOT = { CRITICAL: 'bg-critical', WARNING: 'bg-warning', INFO: 'bg-brand' };
 
-export default function Dashboard({ goAlerts }) {
+export default function Dashboard({ goAlerts, activePropertyId }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
+  const [loadedFor, setLoadedFor] = useState(activePropertyId);
+
+  if (loadedFor !== activePropertyId) {
+    setLoadedFor(activePropertyId);
+    setData(null);
+  }
 
   useEffect(() => {
-    fetch('/api/dashboard')
-      .then((res) => {
+    let cancelled = false;
+    const qs = activePropertyId ? `?propertyId=${activePropertyId}` : '';
+    async function load() {
+      try {
+        const res = await fetch(`/api/dashboard${qs}`);
         if (!res.ok) throw new Error('Failed to load dashboard');
-        return res.json();
-      })
-      .then(setData)
-      .catch((err) => setError(err.message));
-  }, []);
+        const json = await res.json();
+        if (cancelled) return;
+        setData(json);
+        setError('');
+      } catch (err) {
+        if (!cancelled) setError(err.message);
+      }
+    }
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [activePropertyId]);
 
   if (error) return <div className="text-sm text-critical">{error}</div>;
   if (!data) return <div className="text-sm text-faint">Loading…</div>;

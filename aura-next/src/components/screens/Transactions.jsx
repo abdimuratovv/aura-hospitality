@@ -7,32 +7,65 @@ import { formatTime, formatAmount, amountColor, FLAG_META } from '../../lib/form
 const pageBtnBase = 'flex h-8 w-8 items-center justify-center rounded-[10px] text-[13px] cursor-pointer';
 const PAGE_SIZE = 8;
 
-export default function Transactions() {
+export default function Transactions({ activePropertyId, properties, onPropertyChange }) {
   const [page, setPage] = useState(1);
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
+  const [q, setQ] = useState('');
+  const [debouncedQ, setDebouncedQ] = useState('');
+  const [type, setType] = useState('');
+  const [flaggedOnly, setFlaggedOnly] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setDebouncedQ(q.trim());
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [q]);
 
   useEffect(() => {
     let cancelled = false;
-    setError('');
-    fetch(`/api/transactions?page=${page}&pageSize=${PAGE_SIZE}`)
-      .then((res) => {
+    const params = new URLSearchParams({ page: String(page), pageSize: String(PAGE_SIZE) });
+    if (activePropertyId) params.set('propertyId', activePropertyId);
+    if (type) params.set('type', type);
+    if (flaggedOnly) params.set('flag', 'FLAGGED');
+    if (debouncedQ) params.set('q', debouncedQ);
+
+    async function load() {
+      try {
+        const res = await fetch(`/api/transactions?${params.toString()}`);
         if (!res.ok) throw new Error('Failed to load transactions');
-        return res.json();
-      })
-      .then((json) => {
-        if (!cancelled) setData(json);
-      })
-      .catch((err) => {
+        const json = await res.json();
+        if (cancelled) return;
+        setData(json);
+        setError('');
+      } catch (err) {
         if (!cancelled) setError(err.message);
-      });
+      }
+    }
+    load();
     return () => {
       cancelled = true;
     };
-  }, [page]);
+  }, [page, activePropertyId, type, flaggedOnly, debouncedQ]);
+
+  function selectProperty(id) {
+    setPage(1);
+    onPropertyChange?.(id || null);
+  }
+  function selectType(v) {
+    setPage(1);
+    setType(v);
+  }
+  function toggleFlagged() {
+    setPage(1);
+    setFlaggedOnly((f) => !f);
+  }
 
   const rows = data?.rows ?? [];
   const total = data?.total ?? 0;
+  const types = data?.types ?? [];
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
@@ -40,11 +73,35 @@ export default function Transactions() {
       <div className="mb-4 flex flex-wrap items-center gap-2.5">
         <div className="soft-input flex min-w-[220px] flex-1 items-center gap-2.5 px-3.5 py-2.5">
           <Icon name="search" size={18} />
-          <input placeholder="Filter by folio, agent or property…" className="w-full border-none bg-transparent text-[13.5px] text-ink outline-none" />
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Filter by folio or agent…"
+            className="w-full border-none bg-transparent text-[13.5px] text-ink outline-none"
+          />
         </div>
-        <span className="pill px-4 py-2.5 text-sm">All properties</span>
-        <span className="pill px-4 py-2.5 text-sm">All types</span>
-        <span className="cursor-pointer rounded-xl border border-[rgba(229,86,63,.2)] bg-[rgba(229,86,63,.1)] px-4 py-2.5 text-sm font-semibold text-critical">Flagged only</span>
+        <select value={activePropertyId ?? ''} onChange={(e) => selectProperty(e.target.value)} className="pill px-4 py-2.5 text-sm">
+          <option value="">All properties</option>
+          {properties?.map((p) => (
+            <option key={p.id} value={p.id}>{p.shortName}</option>
+          ))}
+        </select>
+        <select value={type} onChange={(e) => selectType(e.target.value)} className="pill px-4 py-2.5 text-sm">
+          <option value="">All types</option>
+          {types.map((t) => (
+            <option key={t} value={t}>{t}</option>
+          ))}
+        </select>
+        <span
+          onClick={toggleFlagged}
+          className={
+            flaggedOnly
+              ? 'cursor-pointer rounded-xl border border-[rgba(229,86,63,.2)] bg-[rgba(229,86,63,.1)] px-4 py-2.5 text-sm font-semibold text-critical'
+              : 'pill px-4 py-2.5 text-sm'
+          }
+        >
+          Flagged only
+        </span>
       </div>
 
       <div className="glass-card overflow-hidden">

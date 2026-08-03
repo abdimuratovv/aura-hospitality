@@ -3,19 +3,36 @@
 import { useEffect, useState } from 'react';
 import { RISK_BAND_META, formatRelativeDay, initialsFromName } from '../../lib/format.js';
 
-export default function Employees() {
+export default function Employees({ activePropertyId }) {
   const [rows, setRows] = useState(null);
   const [error, setError] = useState('');
+  const [loadedFor, setLoadedFor] = useState(activePropertyId);
+
+  if (loadedFor !== activePropertyId) {
+    setLoadedFor(activePropertyId);
+    setRows(null);
+  }
 
   useEffect(() => {
-    fetch('/api/employees')
-      .then((res) => {
+    let cancelled = false;
+    const qs = activePropertyId ? `?propertyId=${activePropertyId}` : '';
+    async function load() {
+      try {
+        const res = await fetch(`/api/employees${qs}`);
         if (!res.ok) throw new Error('Failed to load employees');
-        return res.json();
-      })
-      .then((json) => setRows(json.rows))
-      .catch((err) => setError(err.message));
-  }, []);
+        const json = await res.json();
+        if (cancelled) return;
+        setRows(json.rows);
+        setError('');
+      } catch (err) {
+        if (!cancelled) setError(err.message);
+      }
+    }
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [activePropertyId]);
 
   return (
     <div className="animate-fade-up">
