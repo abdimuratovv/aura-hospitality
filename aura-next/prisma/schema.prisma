@@ -135,12 +135,17 @@ model FraudCase {
   @@index([propertyId])
 }
 
+// `amount` is the identified-leakage figure for this category; `recovered` is how
+// much of it has actually been posted back to the ledger. Added 2026-08-03 (Wave 2)
+// to replace the old fixed $71,340 total in /api/leakage with a real per-category
+// recovery-tracking figure.
 model LeakageCategory {
-  id       String  @id @default(cuid())
-  category String
-  amount   Decimal @db.Decimal(10, 2)
-  pct      Int
-  order    Int
+  id        String  @id @default(cuid())
+  category  String
+  amount    Decimal @db.Decimal(10, 2)
+  recovered Decimal @db.Decimal(10, 2)
+  pct       Int
+  order     Int
 
   createdAt DateTime @default(now())
 }

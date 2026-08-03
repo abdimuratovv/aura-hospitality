@@ -55,7 +55,16 @@ export default function RevenueLeakage() {
                 <span className="text-[13.5px] font-semibold">{formatAmount(l.amount)} <span className="text-xs font-medium text-faint">· {l.pct}%</span></span>
               </div>
               <div className="h-3 overflow-hidden rounded-[7px] bg-[rgba(60,70,110,.08)]">
-                <div className="h-full rounded-[7px] shadow-[inset_0_1px_1px_rgba(255,255,255,.5)]" style={{ width: `${(l.pct / maxPct) * 100}%`, background: 'linear-gradient(90deg,#7dabff,#46d2c8)' }} />
+                <div
+                  className="relative h-full rounded-[7px] shadow-[inset_0_1px_1px_rgba(255,255,255,.5)]"
+                  style={{ width: `${(l.pct / maxPct) * 100}%`, background: 'linear-gradient(90deg,#7dabff,#46d2c8)' }}
+                >
+                  <div className="absolute inset-y-0 left-0 rounded-[7px] bg-[rgba(31,146,104,.55)]" style={{ width: `${Math.min(100, l.recoveryRatePct)}%` }} />
+                </div>
+              </div>
+              <div className="mt-1.5 flex items-baseline justify-between text-[11px] text-faint">
+                <span>{formatAmount(l.recovered)} recovered</span>
+                <span>{l.recoveryRatePct}% of identified</span>
               </div>
             </div>
           ))}

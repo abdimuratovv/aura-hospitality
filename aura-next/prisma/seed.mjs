@@ -165,11 +165,11 @@ async function main() {
   await prisma.leakageCategory.deleteMany({});
   await prisma.leakageCategory.createMany({
     data: [
-      { category: 'Unbilled minibar & F&B', amount: 70120, pct: 38, order: 1 },
-      { category: 'Late-checkout fees missed', amount: 44300, pct: 24, order: 2 },
-      { category: 'Rate parity / underpricing', amount: 33180, pct: 18, order: 3 },
-      { category: 'Uncaptured resort fees', amount: 22090, pct: 12, order: 4 },
-      { category: 'No-show not charged', amount: 14720, pct: 8, order: 5 },
+      { category: 'Unbilled minibar & F&B', amount: 70120, recovered: 32000, pct: 38, order: 1 },
+      { category: 'Late-checkout fees missed', amount: 44300, recovered: 21000, pct: 24, order: 2 },
+      { category: 'Rate parity / underpricing', amount: 33180, recovered: 9500, pct: 18, order: 3 },
+      { category: 'Uncaptured resort fees', amount: 22090, recovered: 6200, pct: 12, order: 4 },
+      { category: 'No-show not charged', amount: 14720, recovered: 2640, pct: 8, order: 5 },
     ],
   });
 

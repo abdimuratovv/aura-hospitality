@@ -11,21 +11,24 @@ export async function GET() {
   const categories = await prisma.leakageCategory.findMany({ orderBy: { order: 'asc' } });
 
   const identified = categories.reduce((sum, c) => sum + Number(c.amount), 0);
-  // Recovered amount comes from postings back to the ledger, not the identified-leakage
-  // categories above — there's no dedicated model for that yet, so this stays a fixed
-  // figure matching the original mock until a real recovery-tracking table exists.
-  const recovered = 71340;
+  const recovered = categories.reduce((sum, c) => sum + Number(c.recovered), 0);
   const recoveryRatePct = Math.round((recovered / identified) * 1000) / 10;
 
   return NextResponse.json({
     identified,
     recovered,
     recoveryRatePct,
-    categories: categories.map((c) => ({
-      id: c.id,
-      category: c.category,
-      amount: Number(c.amount),
-      pct: c.pct,
-    })),
+    categories: categories.map((c) => {
+      const amount = Number(c.amount);
+      const catRecovered = Number(c.recovered);
+      return {
+        id: c.id,
+        category: c.category,
+        amount,
+        recovered: catRecovered,
+        recoveryRatePct: Math.round((catRecovered / amount) * 1000) / 10,
+        pct: c.pct,
+      };
+    }),
   });
 }
