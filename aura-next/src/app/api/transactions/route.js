@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db.js';
 import { getSession } from '@/lib/session.js';
+import { getAccessiblePropertyIds } from '@/lib/access.js';
 
 export async function GET(request) {
   const session = await getSession();
@@ -12,14 +13,18 @@ export async function GET(request) {
   const page = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10) || 1);
   const pageSize = Math.min(50, Math.max(1, parseInt(searchParams.get('pageSize') ?? '8', 10) || 8));
 
+  const propertyIds = await getAccessiblePropertyIds(session.id);
+  const where = { propertyId: { in: propertyIds } };
+
   const [rows, total] = await Promise.all([
     prisma.transaction.findMany({
+      where,
       orderBy: { postedAt: 'desc' },
       skip: (page - 1) * pageSize,
       take: pageSize,
       include: { property: true },
     }),
-    prisma.transaction.count(),
+    prisma.transaction.count({ where }),
   ]);
 
   return NextResponse.json({

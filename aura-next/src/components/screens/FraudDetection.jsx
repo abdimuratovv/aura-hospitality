@@ -3,9 +3,14 @@
 import { useEffect, useState } from 'react';
 import { FRAUD_SEVERITY_META, formatAmount } from '../../lib/format.js';
 
+const STATUS_LABEL = { OPEN: 'Open', INVESTIGATING: 'Investigating', RESOLVED: 'Resolved', FALSE_POSITIVE: 'False positive' };
+const STATUS_OPTIONS = Object.keys(STATUS_LABEL);
+const OPEN_STATUSES = ['OPEN', 'INVESTIGATING'];
+
 export default function FraudDetection() {
   const [rows, setRows] = useState(null);
   const [error, setError] = useState('');
+  const [updatingId, setUpdatingId] = useState(null);
 
   useEffect(() => {
     fetch('/api/fraud-cases')
@@ -17,23 +22,42 @@ export default function FraudDetection() {
       .catch((err) => setError(err.message));
   }, []);
 
-  const critical = rows?.filter((r) => r.severity === 'CRITICAL').length ?? 0;
-  const high = rows?.filter((r) => r.severity === 'HIGH').length ?? 0;
-  const medium = rows?.filter((r) => r.severity === 'MEDIUM').length ?? 0;
-  const amountAtRisk = rows?.reduce((sum, r) => sum + r.amount, 0) ?? 0;
+  async function updateStatus(id, status) {
+    setUpdatingId(id);
+    try {
+      const res = await fetch(`/api/fraud-cases/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) throw new Error('Failed to update case');
+      const updated = await res.json();
+      setRows((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+    } catch {
+      // leave row as-is; user can retry
+    } finally {
+      setUpdatingId(null);
+    }
+  }
+
+  const openRows = rows?.filter((r) => OPEN_STATUSES.includes(r.status)) ?? [];
+  const critical = openRows.filter((r) => r.severity === 'CRITICAL').length;
+  const high = openRows.filter((r) => r.severity === 'HIGH').length;
+  const medium = openRows.filter((r) => r.severity === 'MEDIUM').length;
+  const amountAtRisk = openRows.reduce((sum, r) => sum + r.amount, 0);
 
   return (
     <div className="animate-fade-up">
       <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <div className="glass-card p-5">
           <span className="text-[12.5px] font-semibold text-body">Open Cases</span>
-          <div className="mt-3 text-[28px] font-semibold">{rows?.length ?? '—'}</div>
+          <div className="mt-3 text-[28px] font-semibold">{rows ? openRows.length : '—'}</div>
           <div className="mt-3 text-xs text-faint"><span className="font-semibold text-critical">{critical} critical</span> · {high} high · {medium} medium</div>
         </div>
         <div className="glass-card p-5">
           <span className="text-[12.5px] font-semibold text-body">Amount at Risk</span>
           <div className="mt-3 text-[28px] font-semibold">{formatAmount(amountAtRisk)}</div>
-          <div className="mt-3 text-xs text-faint">across {rows?.length ?? 0} open cases</div>
+          <div className="mt-3 text-xs text-faint">across {openRows.length} open cases</div>
         </div>
         <div className="glass-card p-5">
           <span className="text-[12.5px] font-semibold text-body">Model Precision</span>
@@ -50,8 +74,8 @@ export default function FraudDetection() {
         </div>
         <div className="table-scroll">
           <div className="table-min">
-            <div className="grid grid-cols-[1.1fr_1.3fr_.9fr_.8fr_1fr_.8fr] gap-3 border-b border-[rgba(60,70,110,.1)] px-4.5 pb-2.5 text-[11.5px] font-semibold uppercase tracking-[.04em] text-faint">
-              <span>Severity</span><span>Pattern</span><span>Agent</span><span>Property</span><span>Confidence</span><span className="text-right">Amount</span>
+            <div className="grid grid-cols-[1fr_1.2fr_.8fr_.7fr_.9fr_.7fr_1fr] gap-3 border-b border-[rgba(60,70,110,.1)] px-4.5 pb-2.5 text-[11.5px] font-semibold uppercase tracking-[.04em] text-faint">
+              <span>Severity</span><span>Pattern</span><span>Agent</span><span>Property</span><span>Confidence</span><span className="text-right">Amount</span><span className="text-right">Status</span>
             </div>
 
             {error && <div className="px-4.5 py-6 text-sm text-critical">{error}</div>}
@@ -60,7 +84,7 @@ export default function FraudDetection() {
             {rows?.map((r) => {
               const meta = FRAUD_SEVERITY_META[r.severity];
               return (
-                <div key={r.id} className="grid grid-cols-[1.1fr_1.3fr_.9fr_.8fr_1fr_.8fr] items-center gap-3 border-b border-[rgba(60,70,110,.06)] px-4.5 py-3.5">
+                <div key={r.id} className="grid grid-cols-[1fr_1.2fr_.8fr_.7fr_.9fr_.7fr_1fr] items-center gap-3 border-b border-[rgba(60,70,110,.06)] px-4.5 py-3.5">
                   <span className="justify-self-start rounded-lg px-2.5 py-1 text-xs font-semibold" style={{ color: meta.color, background: meta.bg }}>{meta.label}</span>
                   <span className="text-[13.5px] font-medium text-ink">{r.pattern}</span>
                   <span className="text-[13px] text-muted">{r.agent}</span>
@@ -72,6 +96,16 @@ export default function FraudDetection() {
                     <span className="text-[11.5px] font-semibold text-body">{r.confidence}%</span>
                   </span>
                   <span className="text-right text-[13.5px] font-semibold">{formatAmount(r.amount)}</span>
+                  <select
+                    value={r.status}
+                    disabled={updatingId === r.id}
+                    onChange={(e) => updateStatus(r.id, e.target.value)}
+                    className="justify-self-end rounded-lg border border-[rgba(60,70,110,.14)] bg-transparent px-2 py-1.5 text-[12px] font-medium text-body disabled:opacity-50"
+                  >
+                    {STATUS_OPTIONS.map((s) => (
+                      <option key={s} value={s}>{STATUS_LABEL[s]}</option>
+                    ))}
+                  </select>
                 </div>
               );
             })}

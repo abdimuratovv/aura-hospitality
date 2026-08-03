@@ -68,7 +68,7 @@ async function main() {
   }
   const byCode = Object.fromEntries(propertyRecords.map((p) => [p.code, p]));
 
-  await prisma.user.upsert({
+  const cfo = await prisma.user.upsert({
     where: { email: 'e.reyes@meridianhotels.com' },
     update: { defaultPropertyId: byCode.GM.id },
     create: {
@@ -81,6 +81,34 @@ async function main() {
       criticalAlertsEmail: true,
       weeklyDigest: false,
     },
+  });
+
+  // Property-level GM, scoped to a single property — demonstrates that
+  // property access is actually restrictive, not just plumbing.
+  const gm = await prisma.user.upsert({
+    where: { email: 'r.chandra@meridianhotels.com' },
+    update: { defaultPropertyId: byCode.BS.id },
+    create: {
+      email: 'r.chandra@meridianhotels.com',
+      passwordHash,
+      name: 'Ravi Chandra',
+      role: 'General Manager',
+      defaultPropertyId: byCode.BS.id,
+      twoFactorEnabled: true,
+      criticalAlertsEmail: true,
+      weeklyDigest: true,
+    },
+  });
+
+  // ---- Property access grants ----
+  await prisma.userProperty.deleteMany({});
+  await prisma.userProperty.createMany({
+    data: [
+      // CFO: portfolio-wide, sees every property.
+      ...propertyRecords.map((p) => ({ userId: cfo.id, propertyId: p.id })),
+      // Property GM: scoped to Bayside only.
+      { userId: gm.id, propertyId: byCode.BS.id },
+    ],
   });
 
   // ---- Transactions ----
@@ -243,7 +271,7 @@ async function main() {
   });
 
   console.log(
-    `Seeded: 1 user, ${propertyRecords.length} properties, ${txnRows.length} transactions, 6 employees, 6 fraud cases, 5 leakage categories, 7 alerts, 1 night audit run (6 checklist items), 6 report definitions, 3 insights, ${riskRows.length} risk scores.`
+    `Seeded: 2 users (${propertyRecords.length + 1} property-access grants), ${propertyRecords.length} properties, ${txnRows.length} transactions, 6 employees, 6 fraud cases, 5 leakage categories, 7 alerts, 1 night audit run (6 checklist items), 6 report definitions, 3 insights, ${riskRows.length} risk scores.`
   );
 }
 

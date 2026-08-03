@@ -20,6 +20,8 @@ model User {
   twoFactorEnabled   Boolean @default(true)
   criticalAlertsEmail Boolean @default(true)
   weeklyDigest       Boolean @default(false)
+
+  propertyAccess UserProperty[]
 }
 
 model Property {
@@ -33,6 +35,26 @@ model Property {
   riskScores   PropertyRiskScore[]
   users        User[]
   createdAt    DateTime      @default(now())
+
+  userAccess UserProperty[]
+}
+
+// Which properties a user is permitted to see data for (transactions, employees,
+// fraud cases, risk heatmap). A user with no rows here sees nothing for those
+// screens — access is opt-in, not opt-out. Portfolio-wide entities (DashboardSnapshot,
+// Alert, Insight, ReportDefinition) aren't scoped by this yet since they don't carry
+// a propertyId in the schema.
+model UserProperty {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id])
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, propertyId])
+  @@index([userId])
+  @@index([propertyId])
 }
 
 enum TransactionFlag {
@@ -87,13 +109,21 @@ enum FraudSeverity {
   MEDIUM
 }
 
+enum FraudCaseStatus {
+  OPEN
+  INVESTIGATING
+  RESOLVED
+  FALSE_POSITIVE
+}
+
 model FraudCase {
-  id         String        @id @default(cuid())
+  id         String          @id @default(cuid())
   severity   FraudSeverity
   pattern    String
   agent      String
   confidence Int
-  amount     Decimal       @db.Decimal(10, 2)
+  amount     Decimal         @db.Decimal(10, 2)
+  status     FraudCaseStatus @default(OPEN)
 
   propertyId String
   property   Property @relation(fields: [propertyId], references: [id])
@@ -119,12 +149,19 @@ enum AlertSeverity {
   INFO
 }
 
+enum AlertStatus {
+  OPEN
+  ACKNOWLEDGED
+  RESOLVED
+}
+
 model Alert {
   id       String        @id @default(cuid())
   severity AlertSeverity
   title    String
   meta     String
   source   String
+  status   AlertStatus   @default(OPEN)
 
   createdAt DateTime @default(now())
 }

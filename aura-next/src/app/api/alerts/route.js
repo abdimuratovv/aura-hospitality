@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db.js';
 import { getSession } from '@/lib/session.js';
+import { serializeAlert } from '@/lib/serializers.js';
 
 export async function GET(request) {
   const session = await getSession();
@@ -17,14 +18,5 @@ export async function GET(request) {
     take: limit,
   });
 
-  return NextResponse.json({
-    rows: alerts.map((a) => ({
-      id: a.id,
-      severity: a.severity,
-      title: a.title,
-      meta: a.meta,
-      source: a.source,
-      createdAt: a.createdAt,
-    })),
-  });
+  return NextResponse.json({ rows: alerts.map(serializeAlert) });
 }

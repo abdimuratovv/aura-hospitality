@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db.js';
 import { getSession } from '@/lib/session.js';
+import { getAccessiblePropertyIds } from '@/lib/access.js';
 
 export async function GET() {
   const session = await getSession();
@@ -8,11 +9,14 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  const propertyIds = await getAccessiblePropertyIds(session.id);
+
   const [snapshot, insights, recentAlerts, riskScores] = await Promise.all([
     prisma.dashboardSnapshot.findFirst({ orderBy: { updatedAt: 'desc' } }),
     prisma.insight.findMany({ orderBy: { createdAt: 'desc' } }),
     prisma.alert.findMany({ orderBy: { createdAt: 'desc' }, take: 4 }),
     prisma.propertyRiskScore.findMany({
+      where: { propertyId: { in: propertyIds } },
       include: { property: true },
       orderBy: [{ property: { createdAt: 'asc' } }, { dayIndex: 'asc' }],
     }),

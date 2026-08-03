@@ -12,6 +12,7 @@ function shadeClass(status) {
 export default function NightAudit() {
   const [run, setRun] = useState(null);
   const [error, setError] = useState('');
+  const [updatingId, setUpdatingId] = useState(null);
 
   useEffect(() => {
     fetch('/api/night-audit')
@@ -22,6 +23,24 @@ export default function NightAudit() {
       .then((json) => setRun(json.run))
       .catch((err) => setError(err.message));
   }, []);
+
+  async function markDone(id) {
+    setUpdatingId(id);
+    try {
+      const res = await fetch(`/api/night-audit/checklist/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'DONE' }),
+      });
+      if (!res.ok) throw new Error('Failed to update checklist item');
+      const json = await res.json();
+      setRun(json.run);
+    } catch {
+      // leave item as-is; user can retry
+    } finally {
+      setUpdatingId(null);
+    }
+  }
 
   if (error) return <div className="text-sm text-critical">{error}</div>;
   if (!run) return <div className="text-sm text-faint">Loading…</div>;
@@ -69,6 +88,15 @@ export default function NightAudit() {
                     {row.detail && <span className={row.status === 'WARNING' ? 'text-warning' : 'text-critical'}> — {row.detail}</span>}
                   </span>
                   <span className={`text-xs ${row.status === 'WARNING' ? 'font-semibold text-warning' : row.status === 'CRITICAL' ? 'font-semibold text-critical' : 'text-faint'}`}>{row.meta}</span>
+                  {row.status !== 'DONE' && (
+                    <button
+                      onClick={() => markDone(row.id)}
+                      disabled={updatingId === row.id}
+                      className="icon-btn flex-none rounded-[10px] px-3 py-1.5 text-[12px] font-semibold text-ink-soft disabled:opacity-50"
+                    >
+                      {updatingId === row.id ? 'Saving…' : 'Mark done'}
+                    </button>
+                  )}
                 </div>
               );
             })}

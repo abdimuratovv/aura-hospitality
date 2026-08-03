@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db.js';
 import { getSession } from '@/lib/session.js';
+import { getAccessiblePropertyIds } from '@/lib/access.js';
+import { serializeFraudCase } from '@/lib/serializers.js';
 
 export async function GET() {
   const session = await getSession();
@@ -8,20 +10,13 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  const propertyIds = await getAccessiblePropertyIds(session.id);
+
   const cases = await prisma.fraudCase.findMany({
+    where: { propertyId: { in: propertyIds } },
     orderBy: { confidence: 'desc' },
     include: { property: true },
   });
 
-  return NextResponse.json({
-    rows: cases.map((c) => ({
-      id: c.id,
-      severity: c.severity,
-      pattern: c.pattern,
-      agent: c.agent,
-      confidence: c.confidence,
-      amount: Number(c.amount),
-      property: { code: c.property.code, name: c.property.shortName },
-    })),
-  });
+  return NextResponse.json({ rows: cases.map(serializeFraudCase) });
 }
