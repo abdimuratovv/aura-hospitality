@@ -3,19 +3,34 @@
 import { useEffect, useState } from 'react';
 import { formatAmount } from '../../lib/format.js';
 
-export default function RevenueLeakage() {
+export default function RevenueLeakage({ activePropertyId }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
+  const [loadedFor, setLoadedFor] = useState(activePropertyId);
+
+  if (loadedFor !== activePropertyId) {
+    setLoadedFor(activePropertyId);
+    setData(null);
+  }
 
   useEffect(() => {
-    fetch('/api/leakage')
+    let cancelled = false;
+    const qs = activePropertyId ? `?propertyId=${activePropertyId}` : '';
+    fetch(`/api/leakage${qs}`)
       .then((res) => {
         if (!res.ok) throw new Error('Failed to load leakage data');
         return res.json();
       })
-      .then(setData)
-      .catch((err) => setError(err.message));
-  }, []);
+      .then((json) => {
+        if (!cancelled) setData(json);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err.message);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [activePropertyId]);
 
   const maxPct = data?.categories.length ? Math.max(...data.categories.map((c) => c.pct)) : 1;
 

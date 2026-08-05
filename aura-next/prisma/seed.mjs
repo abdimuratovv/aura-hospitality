@@ -161,18 +161,6 @@ async function main() {
     ],
   });
 
-  // ---- Leakage categories ----
-  await prisma.leakageCategory.deleteMany({});
-  await prisma.leakageCategory.createMany({
-    data: [
-      { category: 'Unbilled minibar & F&B', amount: 70120, recovered: 32000, pct: 38, order: 1 },
-      { category: 'Late-checkout fees missed', amount: 44300, recovered: 21000, pct: 24, order: 2 },
-      { category: 'Rate parity / underpricing', amount: 33180, recovered: 9500, pct: 18, order: 3 },
-      { category: 'Uncaptured resort fees', amount: 22090, recovered: 6200, pct: 12, order: 4 },
-      { category: 'No-show not charged', amount: 14720, recovered: 2640, pct: 8, order: 5 },
-    ],
-  });
-
   // ---- Alerts ----
   await prisma.alert.deleteMany({});
   await prisma.alert.createMany({
@@ -283,6 +271,48 @@ async function main() {
     });
   }
 
+  // Relative size of each property, used below to split the portfolio-level
+  // leakage/financials baselines across properties — bigger properties (more
+  // revenue posted) get a proportionally bigger slice of both leakage and revenue.
+  const totalRevenuePosted = Object.values(nightAuditByProperty).reduce((sum, p) => sum + p.run.revenuePosted, 0);
+  const propertyWeight = {};
+  for (const code of Object.keys(nightAuditByProperty)) {
+    propertyWeight[code] = nightAuditByProperty[code].run.revenuePosted / totalRevenuePosted;
+  }
+  function scaled(value, weight, nearest = 10) {
+    return Math.round((value * weight) / nearest) * nearest;
+  }
+
+  // ---- Leakage categories (per property) ----
+  // Baseline is the portfolio-level category mix that used to be the entire
+  // table; each property now gets its own 5-row breakdown, scaled by
+  // propertyWeight. `pct` (share within a property's own breakdown) stays the
+  // same across properties — a simplifying assumption that every property leaks
+  // in roughly the same categorical proportions, just at different scale.
+  await prisma.leakageCategory.deleteMany({});
+  const leakageCategoryBaseline = [
+    { category: 'Unbilled minibar & F&B', amount: 70120, recovered: 32000, pct: 38, order: 1 },
+    { category: 'Late-checkout fees missed', amount: 44300, recovered: 21000, pct: 24, order: 2 },
+    { category: 'Rate parity / underpricing', amount: 33180, recovered: 9500, pct: 18, order: 3 },
+    { category: 'Uncaptured resort fees', amount: 22090, recovered: 6200, pct: 12, order: 4 },
+    { category: 'No-show not charged', amount: 14720, recovered: 2640, pct: 8, order: 5 },
+  ];
+  const leakageRows = [];
+  for (const code of Object.keys(propertyWeight)) {
+    const weight = propertyWeight[code];
+    for (const cat of leakageCategoryBaseline) {
+      leakageRows.push({
+        category: cat.category,
+        amount: scaled(cat.amount, weight),
+        recovered: scaled(cat.recovered, weight),
+        pct: cat.pct,
+        order: cat.order,
+        propertyId: byCode[code].id,
+      });
+    }
+  }
+  await prisma.leakageCategory.createMany({ data: leakageRows });
+
   // ---- Report definitions ----
   await prisma.reportDefinition.deleteMany({});
   await prisma.reportDefinition.createMany({
@@ -334,9 +364,13 @@ async function main() {
     },
   });
 
-  // ---- Weekly financials (Dashboard's revenue vs. recovered-leakage chart) ----
+  // ---- Weekly financials (per property, backs the Dashboard's revenue vs.
+  // recovered-leakage chart). Baseline is the old portfolio-level 12-week series;
+  // /api/dashboard sums each property's row back up to reconstruct the portfolio
+  // view when more than one property is in scope, so these should sum back
+  // (modulo rounding) to the original portfolio figures.
   await prisma.weeklyFinancials.deleteMany({});
-  const weeklyFinancials = [
+  const weeklyFinancialsBaseline = [
     { weekIndex: 0, weekLabel: 'Wk 1', revenue: 4120000, leakageRecovered: 13800 },
     { weekIndex: 1, weekLabel: 'Wk 2', revenue: 4180000, leakageRecovered: 14200 },
     { weekIndex: 2, weekLabel: 'Wk 3', revenue: 4050000, leakageRecovered: 15100 },
@@ -350,10 +384,23 @@ async function main() {
     { weekIndex: 10, weekLabel: 'Wk 11', revenue: 4820000, leakageRecovered: 19100 },
     { weekIndex: 11, weekLabel: 'Wk 12', revenue: 4910000, leakageRecovered: 19800 },
   ];
-  await prisma.weeklyFinancials.createMany({ data: weeklyFinancials });
+  const weeklyFinancialsRows = [];
+  for (const code of Object.keys(propertyWeight)) {
+    const weight = propertyWeight[code];
+    for (const wk of weeklyFinancialsBaseline) {
+      weeklyFinancialsRows.push({
+        weekIndex: wk.weekIndex,
+        weekLabel: wk.weekLabel,
+        revenue: scaled(wk.revenue, weight, 1000),
+        leakageRecovered: scaled(wk.leakageRecovered, weight, 10),
+        propertyId: byCode[code].id,
+      });
+    }
+  }
+  await prisma.weeklyFinancials.createMany({ data: weeklyFinancialsRows });
 
   console.log(
-    `Seeded: 2 users (${propertyRecords.length + 1} property-access grants), ${propertyRecords.length} properties, ${txnRows.length} transactions, 6 employees, 6 fraud cases, 5 leakage categories, 7 alerts, ${Object.keys(nightAuditByProperty).length} night audit runs (6 checklist items each), 6 report definitions, 3 insights, ${riskRows.length} risk scores, ${weeklyFinancials.length} weekly financials rows.`
+    `Seeded: 2 users (${propertyRecords.length + 1} property-access grants), ${propertyRecords.length} properties, ${txnRows.length} transactions, 6 employees, 6 fraud cases, ${leakageRows.length} leakage categories (5 per property), 7 alerts, ${Object.keys(nightAuditByProperty).length} night audit runs (6 checklist items each), 6 report definitions, 3 insights, ${riskRows.length} risk scores, ${weeklyFinancialsRows.length} weekly financials rows (12 weeks per property).`
   );
 }
 

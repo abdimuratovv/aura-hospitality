@@ -22,14 +22,13 @@ export async function GET(request) {
       include: { property: true },
       orderBy: [{ property: { createdAt: 'asc' } }, { dayIndex: 'asc' }],
     }),
-    prisma.weeklyFinancials.findMany({ orderBy: { weekIndex: 'asc' } }),
+    prisma.weeklyFinancials.findMany({ where: { propertyId: { in: propertyIds } }, orderBy: { weekIndex: 'asc' } }),
     // "Active" mirrors the Fraud Detection screen's Open Cases card: OPEN + INVESTIGATING only.
     prisma.fraudCase.findMany({
       where: { propertyId: { in: propertyIds }, status: { in: ['OPEN', 'INVESTIGATING'] } },
       select: { severity: true },
     }),
-    // Portfolio-wide regardless of propertyIds — LeakageCategory has no propertyId yet.
-    prisma.leakageCategory.findMany({ select: { amount: true, recovered: true } }),
+    prisma.leakageCategory.findMany({ where: { propertyId: { in: propertyIds } }, select: { amount: true, recovered: true } }),
     prisma.nightAuditRun.findMany({
       where: { propertyId: { in: propertyIds } },
       select: { closeProgressPct: true, openDiscrepancies: true },
@@ -54,6 +53,26 @@ export async function GET(request) {
     : 0;
   const nightAuditExceptions = nightAuditRuns.reduce((sum, r) => sum + r.openDiscrepancies, 0);
 
+  // Each in-scope property has its own 12-week series — sum by weekIndex to
+  // reconstruct a portfolio view when multiple properties are in scope, or pass
+  // through a single property's own series when narrowed via ?propertyId=.
+  const weeklyByIndex = new Map();
+  for (const w of weeklyFinancials) {
+    const existing = weeklyByIndex.get(w.weekIndex);
+    if (existing) {
+      existing.revenue += Number(w.revenue);
+      existing.leakageRecovered += Number(w.leakageRecovered);
+    } else {
+      weeklyByIndex.set(w.weekIndex, {
+        weekIndex: w.weekIndex,
+        weekLabel: w.weekLabel,
+        revenue: Number(w.revenue),
+        leakageRecovered: Number(w.leakageRecovered),
+      });
+    }
+  }
+  const weeklyFinancialsOut = [...weeklyByIndex.values()].sort((a, b) => a.weekIndex - b.weekIndex);
+
   return NextResponse.json({
     snapshot: snapshot
       ? {
@@ -70,11 +89,6 @@ export async function GET(request) {
     insights: insights.map((i) => ({ id: i.id, type: i.type, text: i.text })),
     recentAlerts: recentAlerts.map((a) => ({ id: a.id, severity: a.severity, title: a.title, meta: a.meta, createdAt: a.createdAt })),
     heatmap,
-    weeklyFinancials: weeklyFinancials.map((w) => ({
-      weekIndex: w.weekIndex,
-      weekLabel: w.weekLabel,
-      revenue: Number(w.revenue),
-      leakageRecovered: Number(w.leakageRecovered),
-    })),
+    weeklyFinancials: weeklyFinancialsOut,
   });
 }

@@ -40,7 +40,7 @@ const INSIGHT_META = {
 
 const ALERT_DOT = { CRITICAL: 'bg-critical', WARNING: 'bg-warning', INFO: 'bg-brand' };
 
-export default function Dashboard({ goAlerts, activePropertyId }) {
+export default function Dashboard({ goAlerts, activePropertyId, properties }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const [loadedFor, setLoadedFor] = useState(activePropertyId);
@@ -80,6 +80,8 @@ export default function Dashboard({ goAlerts, activePropertyId }) {
   const recoveredTrend = buildTrendPaths(weekly.map((w) => w.leakageRecovered));
   const lastRevenuePoint = revenueTrend.points.at(-1);
   const axisLabels = weekly.filter((_, i) => i % 2 === 0).map((w) => w.weekLabel);
+  const activeProperty = properties?.find((p) => p.id === activePropertyId);
+  const trendScope = activeProperty ? activeProperty.shortName : 'all properties';
   const statCards = [
     { label: 'Portfolio Revenue', icon: 'revenue', iconC: 'text-success', iconBg: 'bg-success-bg', value: `$${(s.portfolioRevenue / 1e6).toFixed(2)}M`, badge: `▲ ${s.portfolioRevenueChangePct}%`, badgeC: 'text-success', badgeBg: 'bg-success-bg', note: 'vs last week' },
     { label: 'Active Fraud Alerts', icon: 'shield', iconC: 'text-critical', iconBg: 'bg-critical-bg', value: String(s.activeFraudAlerts), badge: `${s.activeFraudAlertsCritical} critical`, badgeC: 'text-critical', badgeBg: 'bg-critical-bg', note: 'needs review' },
@@ -112,7 +114,7 @@ export default function Dashboard({ goAlerts, activePropertyId }) {
           <div className="mb-5.5 flex items-center justify-between">
             <div>
               <h3 className="mb-1 text-base font-semibold">Revenue vs. Recovered Leakage</h3>
-              <p className="text-[12.5px] text-faint">Last 12 weeks · all properties</p>
+              <p className="text-[12.5px] text-faint">Last 12 weeks · {trendScope}</p>
             </div>
             <div className="flex gap-4 text-xs text-body">
               <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[3px] bg-brand" />Revenue</span>

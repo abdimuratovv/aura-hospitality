@@ -35,6 +35,8 @@ model Property {
   riskScores     PropertyRiskScore[]
   alerts         Alert[]
   nightAuditRuns NightAuditRun[]
+  leakageCategories LeakageCategory[]
+  weeklyFinancials  WeeklyFinancials[]
   users          User[]
   createdAt      DateTime            @default(now())
 
@@ -42,10 +44,11 @@ model Property {
 }
 
 // Which properties a user is permitted to see data for (transactions, employees,
-// fraud cases, risk heatmap, alerts, night audit runs). A user with no rows here
-// sees nothing for those screens — access is opt-in, not opt-out. Portfolio-wide
-// entities (DashboardSnapshot, Insight, ReportDefinition, WeeklyFinancials) aren't
-// scoped by this yet since they don't carry a propertyId in the schema.
+// fraud cases, risk heatmap, alerts, night audit runs, leakage categories, weekly
+// financials). A user with no rows here sees nothing for those screens — access is
+// opt-in, not opt-out. Portfolio-wide entities (DashboardSnapshot's Portfolio
+// Revenue card, Insight, ReportDefinition) aren't scoped by this yet since they
+// don't carry a propertyId in the schema.
 model UserProperty {
   id         String   @id @default(cuid())
   userId     String
@@ -138,7 +141,8 @@ model FraudCase {
 // `amount` is the identified-leakage figure for this category; `recovered` is how
 // much of it has actually been posted back to the ledger. Added 2026-08-03 (Wave 2)
 // to replace the old fixed $71,340 total in /api/leakage with a real per-category
-// recovery-tracking figure.
+// recovery-tracking figure. Got a required `propertyId` 2026-08-04 (Wave 2) — each
+// property has its own 5-category breakdown now instead of one portfolio-wide set.
 model LeakageCategory {
   id        String  @id @default(cuid())
   category  String
@@ -147,7 +151,12 @@ model LeakageCategory {
   pct       Int
   order     Int
 
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id])
+
   createdAt DateTime @default(now())
+
+  @@index([propertyId])
 }
 
 enum AlertSeverity {
@@ -270,17 +279,28 @@ model DashboardSnapshot {
   updatedAt                 DateTime @updatedAt
 }
 
-// Portfolio-wide weekly revenue vs. recovered-leakage trend backing the Dashboard's
-// "Revenue vs. Recovered Leakage" chart. Wave 2 data-pipeline slice: replaces the
-// hand-drawn illustrative SVG curve with a real (still portfolio-wide, not
-// property-scoped) time series. Not derived from Transaction/LeakageCategory rows —
-// there's no real weekly close process feeding this yet, so it's seeded historical
-// data rather than a live rollup, same rationale as DashboardSnapshot above.
+// Weekly revenue vs. recovered-leakage trend backing the Dashboard's "Revenue vs.
+// Recovered Leakage" chart. Wave 2 data-pipeline slice: replaces the hand-drawn
+// illustrative SVG curve with a real time series. Not derived from
+// Transaction/LeakageCategory rows — there's no real weekly close process feeding
+// this yet, so it's seeded historical data rather than a live rollup, same
+// rationale as DashboardSnapshot above. Got a required `propertyId` 2026-08-04
+// (Wave 2) — each property has its own 12-week series now; `/api/dashboard` sums
+// across the caller's accessible properties per weekIndex when more than one
+// property is in scope (portfolio view), or returns a single property's series
+// when narrowed via `?propertyId=`.
 model WeeklyFinancials {
-  id                String   @id @default(cuid())
-  weekIndex         Int      @unique
-  weekLabel         String
-  revenue           Decimal  @db.Decimal(12, 2)
-  leakageRecovered  Decimal  @db.Decimal(12, 2)
-  createdAt         DateTime @default(now())
+  id               String   @id @default(cuid())
+  weekIndex        Int
+  weekLabel        String
+  revenue          Decimal  @db.Decimal(12, 2)
+  leakageRecovered Decimal  @db.Decimal(12, 2)
+
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@unique([propertyId, weekIndex])
+  @@index([propertyId])
 }
