@@ -190,6 +190,11 @@ model Alert {
   source   String
   status   AlertStatus   @default(OPEN)
 
+  // Set by scripts/notifyCriticalAlerts.mjs once a Telegram notification has been
+  // sent for this row (CRITICAL alerts only) — null means not yet notified. Added
+  // 2026-08-05, Wave 3 Alert Engine slice.
+  notifiedAt DateTime?
+
   propertyId String
   property   Property @relation(fields: [propertyId], references: [id])
 
