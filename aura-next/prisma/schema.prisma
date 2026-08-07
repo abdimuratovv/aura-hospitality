@@ -121,6 +121,16 @@ enum FraudCaseStatus {
   FALSE_POSITIVE
 }
 
+// SEEDED rows are the hand-authored illustrative cases from seed.mjs; DETECTED rows
+// are written by the ai-service rule engine (added 2026-08-05, Wave 3) scanning
+// Transaction rows for fraud patterns. ai-service deletes-then-recreates its own
+// DETECTED rows on every run (mirrors seed.mjs's idempotency convention) and never
+// touches SEEDED rows.
+enum FraudCaseSource {
+  SEEDED
+  DETECTED
+}
+
 model FraudCase {
   id         String          @id @default(cuid())
   severity   FraudSeverity
@@ -129,6 +139,7 @@ model FraudCase {
   confidence Int
   amount     Decimal         @db.Decimal(10, 2)
   status     FraudCaseStatus @default(OPEN)
+  source     FraudCaseSource @default(SEEDED)
 
   propertyId String
   property   Property @relation(fields: [propertyId], references: [id])

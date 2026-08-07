@@ -2,16 +2,16 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "aura-react",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["--prefix", "aura-react", "run", "dev", "--", "--port", "5173", "--strictPort"],
-      "port": 5173
-    },
-    {
       "name": "aura-next",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["--prefix", "aura-next", "run", "dev", "--", "--port", "3000"],
       "port": 3000
+    },
+    {
+      "name": "ai-service",
+      "runtimeExecutable": "ai-service/.venv/Scripts/python.exe",
+      "runtimeArgs": ["-m", "uvicorn", "app.main:app", "--app-dir", "ai-service", "--port", "8001"],
+      "port": 8001
     }
   ]
 }
