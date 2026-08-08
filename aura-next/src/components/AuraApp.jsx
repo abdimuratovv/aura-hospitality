@@ -15,7 +15,7 @@ import Transactions from './screens/Transactions.jsx';
 import Employees from './screens/Employees.jsx';
 import Reports from './screens/Reports.jsx';
 import Settings from './screens/Settings.jsx';
-import { titles } from '../lib/data.js';
+import { LanguageProvider, useLanguage } from '../lib/i18n/LanguageContext.jsx';
 
 const SCREENS = {
   dashboard: Dashboard,
@@ -30,6 +30,15 @@ const SCREENS = {
 };
 
 export default function AuraApp() {
+  return (
+    <LanguageProvider>
+      <AuraAppInner />
+    </LanguageProvider>
+  );
+}
+
+function AuraAppInner() {
+  const { t } = useLanguage();
   const [user, setUser] = useState(null);
   const [checkingSession, setCheckingSession] = useState(true);
   const [screen, setScreen] = useState('dashboard');
@@ -62,7 +71,8 @@ export default function AuraApp() {
     setActivePropertyId(null);
   }
 
-  const [title, sub] = titles[screen] || ['', ''];
+  const title = t(`titles.${screen}.title`);
+  const sub = t(`titles.${screen}.sub`);
   const Screen = SCREENS[screen] || Dashboard;
 
   return (

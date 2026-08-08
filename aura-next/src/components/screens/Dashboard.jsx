@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Icon from '../Icon.jsx';
 import { timeAgo, buildTrendPaths } from '../../lib/format.js';
+import { useLanguage } from '../../lib/i18n/LanguageContext.jsx';
 
 function cellColor(v) {
   if (v < 0.33) return `rgba(95,191,153,${0.25 + v})`;
@@ -32,17 +33,12 @@ function Heatmap({ heatmap }) {
   );
 }
 
-const INSIGHT_META = {
-  CRITICAL: { label: 'Critical', dot: 'bg-critical', text: 'text-critical', border: 'border-[rgba(229,86,63,.16)]', bg: 'bg-[rgba(229,86,63,.08)]' },
-  OPPORTUNITY: { label: 'Opportunity', dot: 'bg-warning', text: 'text-warning', border: 'border-[rgba(214,158,46,.16)]', bg: 'bg-[rgba(214,158,46,.08)]' },
-  TREND: { label: 'Trend', dot: 'bg-brand', text: 'text-brand', border: 'border-[rgba(79,140,255,.16)]', bg: 'bg-[rgba(79,140,255,.08)]' },
-};
-
 const ALERT_DOT = { CRITICAL: 'bg-critical', WARNING: 'bg-warning', INFO: 'bg-brand' };
 
 export default function Dashboard({ goAlerts, activePropertyId, properties }) {
+  const { t } = useLanguage();
   const [data, setData] = useState(null);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(false);
   const [loadedFor, setLoadedFor] = useState(activePropertyId);
 
   if (loadedFor !== activePropertyId) {
@@ -60,9 +56,9 @@ export default function Dashboard({ goAlerts, activePropertyId, properties }) {
         const json = await res.json();
         if (cancelled) return;
         setData(json);
-        setError('');
-      } catch (err) {
-        if (!cancelled) setError(err.message);
+        setError(false);
+      } catch {
+        if (!cancelled) setError(true);
       }
     }
     load();
@@ -71,8 +67,14 @@ export default function Dashboard({ goAlerts, activePropertyId, properties }) {
     };
   }, [activePropertyId]);
 
-  if (error) return <div className="text-sm text-critical">{error}</div>;
-  if (!data) return <div className="text-sm text-faint">Loading…</div>;
+  const INSIGHT_META = {
+    CRITICAL: { label: t('dashboard.insightCritical'), dot: 'bg-critical', text: 'text-critical', border: 'border-[rgba(229,86,63,.16)]', bg: 'bg-[rgba(229,86,63,.08)]' },
+    OPPORTUNITY: { label: t('dashboard.insightOpportunity'), dot: 'bg-warning', text: 'text-warning', border: 'border-[rgba(214,158,46,.16)]', bg: 'bg-[rgba(214,158,46,.08)]' },
+    TREND: { label: t('dashboard.insightTrend'), dot: 'bg-brand', text: 'text-brand', border: 'border-[rgba(79,140,255,.16)]', bg: 'bg-[rgba(79,140,255,.08)]' },
+  };
+
+  if (error) return <div className="text-sm text-critical">{t('common.loadError')}</div>;
+  if (!data) return <div className="text-sm text-faint">{t('common.loading')}</div>;
 
   const s = data.snapshot;
   const weekly = data.weeklyFinancials ?? [];
@@ -81,12 +83,12 @@ export default function Dashboard({ goAlerts, activePropertyId, properties }) {
   const lastRevenuePoint = revenueTrend.points.at(-1);
   const axisLabels = weekly.filter((_, i) => i % 2 === 0).map((w) => w.weekLabel);
   const activeProperty = properties?.find((p) => p.id === activePropertyId);
-  const trendScope = activeProperty ? activeProperty.shortName : 'all properties';
+  const trendScope = activeProperty ? activeProperty.shortName : t('dashboard.allPropertiesScope');
   const statCards = [
-    { label: 'Portfolio Revenue', icon: 'revenue', iconC: 'text-success', iconBg: 'bg-success-bg', value: `$${(s.portfolioRevenue / 1e6).toFixed(2)}M`, badge: `▲ ${s.portfolioRevenueChangePct}%`, badgeC: 'text-success', badgeBg: 'bg-success-bg', note: 'vs last week' },
-    { label: 'Active Fraud Alerts', icon: 'shield', iconC: 'text-critical', iconBg: 'bg-critical-bg', value: String(s.activeFraudAlerts), badge: `${s.activeFraudAlertsCritical} critical`, badgeC: 'text-critical', badgeBg: 'bg-critical-bg', note: 'needs review' },
-    { label: 'Revenue Leakage', icon: 'drop', iconC: 'text-warning', iconBg: 'bg-warning-bg', value: `$${Math.round(s.revenueLeakage / 1000)}K`, badge: `$${Math.round(s.revenueLeakageRecovered / 1000)}K recovered`, badgeC: 'text-warning', badgeBg: 'bg-warning-bg', note: '' },
-    { label: 'Night Audit', icon: 'moon', iconC: 'text-brand', iconBg: 'bg-[rgba(79,140,255,.16)]', value: `${s.nightAuditPct}%`, badge: 'Reconciled', badgeC: 'text-success', badgeBg: 'bg-success-bg', note: `${s.nightAuditExceptions} exceptions` },
+    { label: t('dashboard.portfolioRevenue'), icon: 'revenue', iconC: 'text-success', iconBg: 'bg-success-bg', value: `$${(s.portfolioRevenue / 1e6).toFixed(2)}M`, badge: `▲ ${s.portfolioRevenueChangePct}%`, badgeC: 'text-success', badgeBg: 'bg-success-bg', note: t('dashboard.vsLastWeek') },
+    { label: t('dashboard.activeFraudAlerts'), icon: 'shield', iconC: 'text-critical', iconBg: 'bg-critical-bg', value: String(s.activeFraudAlerts), badge: `${s.activeFraudAlertsCritical} ${t('status.critical').toLowerCase()}`, badgeC: 'text-critical', badgeBg: 'bg-critical-bg', note: t('dashboard.needsReview') },
+    { label: t('dashboard.revenueLeakage'), icon: 'drop', iconC: 'text-warning', iconBg: 'bg-warning-bg', value: `$${Math.round(s.revenueLeakage / 1000)}K`, badge: `$${Math.round(s.revenueLeakageRecovered / 1000)}K ${t('dashboard.legendRecovered').toLowerCase()}`, badgeC: 'text-warning', badgeBg: 'bg-warning-bg', note: '' },
+    { label: t('dashboard.nightAudit'), icon: 'moon', iconC: 'text-brand', iconBg: 'bg-[rgba(79,140,255,.16)]', value: `${s.nightAuditPct}%`, badge: t('dashboard.reconciled'), badgeC: 'text-success', badgeBg: 'bg-success-bg', note: t('dashboard.exceptions', { n: s.nightAuditExceptions }) },
   ];
 
   return (
@@ -113,12 +115,12 @@ export default function Dashboard({ goAlerts, activePropertyId, properties }) {
         <div className="glass-card p-6">
           <div className="mb-5.5 flex items-center justify-between">
             <div>
-              <h3 className="mb-1 text-base font-semibold">Revenue vs. Recovered Leakage</h3>
-              <p className="text-[12.5px] text-faint">Last 12 weeks · {trendScope}</p>
+              <h3 className="mb-1 text-base font-semibold">{t('dashboard.revenueVsLeakage')}</h3>
+              <p className="text-[12.5px] text-faint">{t('dashboard.last12Weeks', { scope: trendScope })}</p>
             </div>
             <div className="flex gap-4 text-xs text-body">
-              <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[3px] bg-brand" />Revenue</span>
-              <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[3px] bg-teal" />Recovered</span>
+              <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[3px] bg-brand" />{t('dashboard.legendRevenue')}</span>
+              <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[3px] bg-teal" />{t('dashboard.legendRecovered')}</span>
             </div>
           </div>
           <svg viewBox="0 0 640 240" className="block w-full h-auto">
@@ -149,7 +151,7 @@ export default function Dashboard({ goAlerts, activePropertyId, properties }) {
             <span className="flex h-7 w-7 items-center justify-center rounded-[9px] text-white" style={{ background: 'linear-gradient(160deg,#7dabff,#7a6bff)' }}>
               <Icon name="spark" size={16} />
             </span>
-            <h3 className="text-base font-semibold">AI Insights</h3>
+            <h3 className="text-base font-semibold">{t('dashboard.aiInsights')}</h3>
           </div>
           <div className="flex flex-col gap-3.5">
             {data.insights.map((insight) => {
@@ -171,8 +173,8 @@ export default function Dashboard({ goAlerts, activePropertyId, properties }) {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.4fr_1fr]">
         <div className="glass-card p-6">
           <div className="mb-4.5 flex items-center justify-between">
-            <h3 className="text-base font-semibold">Recent Alerts</h3>
-            <a href="#" onClick={(e) => { e.preventDefault(); goAlerts(); }} className="text-[12.5px] font-semibold">View all</a>
+            <h3 className="text-base font-semibold">{t('dashboard.recentAlerts')}</h3>
+            <a href="#" onClick={(e) => { e.preventDefault(); goAlerts(); }} className="text-[12.5px] font-semibold">{t('common.viewAll')}</a>
           </div>
           <div className="flex flex-col gap-1">
             {data.recentAlerts.map((a, i) => (
@@ -182,7 +184,7 @@ export default function Dashboard({ goAlerts, activePropertyId, properties }) {
                   <div className="text-[13.5px] font-semibold">{a.title}</div>
                   <div className="text-xs text-faint">{a.meta}</div>
                 </div>
-                <span className="flex-none text-xs text-faint">{timeAgo(a.createdAt)}</span>
+                <span className="flex-none text-xs text-faint">{timeAgo(a.createdAt, t)}</span>
               </div>
             ))}
           </div>
@@ -190,14 +192,14 @@ export default function Dashboard({ goAlerts, activePropertyId, properties }) {
 
         <div className="glass-card p-6">
           <div className="mb-4.5">
-            <h3 className="mb-1 text-base font-semibold">Property Risk Heatmap</h3>
-            <p className="text-[12.5px] text-faint">Composite risk · {Object.keys(data.heatmap).length} properties</p>
+            <h3 className="mb-1 text-base font-semibold">{t('dashboard.propertyRiskHeatmap')}</h3>
+            <p className="text-[12.5px] text-faint">{t('dashboard.compositeRisk', { n: Object.keys(data.heatmap).length })}</p>
           </div>
           <Heatmap heatmap={data.heatmap} />
           <div className="mt-4 flex items-center gap-3 text-[11px] text-faint">
-            <span>Low</span>
+            <span>{t('dashboard.low')}</span>
             <div className="h-[7px] flex-1 rounded" style={{ background: 'linear-gradient(90deg,#5fbf99,#e0c65a,#e5563f)' }} />
-            <span>High</span>
+            <span>{t('dashboard.high')}</span>
           </div>
         </div>
       </div>

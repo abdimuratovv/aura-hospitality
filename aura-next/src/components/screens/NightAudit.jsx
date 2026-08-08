@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { CHECKLIST_STATUS_META, formatAmount } from '../../lib/format.js';
+import { CHECKLIST_STATUS_META, formatAmount, formatShortDate } from '../../lib/format.js';
+import { useLanguage } from '../../lib/i18n/LanguageContext.jsx';
 
 function shadeClass(status) {
   if (status === 'WARNING') return 'border border-[rgba(214,158,46,.18)] bg-[rgba(214,158,46,.07)]';
@@ -10,8 +11,9 @@ function shadeClass(status) {
 }
 
 export default function NightAudit({ activePropertyId }) {
+  const { t } = useLanguage();
   const [run, setRun] = useState(null);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(false);
   const [updatingId, setUpdatingId] = useState(null);
   const [loadedFor, setLoadedFor] = useState(activePropertyId);
 
@@ -30,9 +32,9 @@ export default function NightAudit({ activePropertyId }) {
         const json = await res.json();
         if (cancelled) return;
         setRun(json.run);
-        setError('');
-      } catch (err) {
-        if (!cancelled) setError(err.message);
+        setError(false);
+      } catch {
+        if (!cancelled) setError(true);
       }
     }
     load();
@@ -59,8 +61,8 @@ export default function NightAudit({ activePropertyId }) {
     }
   }
 
-  if (error) return <div className="text-sm text-critical">{error}</div>;
-  if (!run) return <div className="text-sm text-faint">Loading…</div>;
+  if (error) return <div className="text-sm text-critical">{t('common.loadError')}</div>;
+  if (!run) return <div className="text-sm text-faint">{t('common.loading')}</div>;
 
   const closePct = Math.round((run.closeStepsCompleted / run.closeStepsTotal) * 100);
   const circumference = 2 * Math.PI * 66;
@@ -70,30 +72,30 @@ export default function NightAudit({ activePropertyId }) {
     <div className="animate-fade-up">
       <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <div className="glass-card p-5">
-          <span className="text-[12.5px] font-semibold text-body">Close Status</span>
-          <div className="mt-3 text-[28px] font-semibold tracking-[-.02em]">{run.closeStepsCompleted} <span className="text-lg text-faint">/ {run.closeStepsTotal} steps</span></div>
+          <span className="text-[12.5px] font-semibold text-body">{t('nightAudit.closeStatus')}</span>
+          <div className="mt-3 text-[28px] font-semibold tracking-[-.02em]">{run.closeStepsCompleted} <span className="text-lg text-faint">{t('nightAudit.steps', { n: run.closeStepsTotal })}</span></div>
           <div className="mt-3.5 h-[7px] overflow-hidden rounded-[5px] bg-[rgba(60,70,110,.1)]">
             <div className="h-full rounded-[5px]" style={{ width: `${closePct}%`, background: 'linear-gradient(90deg,#7dabff,#4f8cff)' }} />
           </div>
-          <div className="mt-2.5 text-xs text-faint">Est. completion {run.estCompletionLabel}</div>
+          <div className="mt-2.5 text-xs text-faint">{t('nightAudit.estCompletion', { label: run.estCompletionLabel })}</div>
         </div>
         <div className="glass-card p-5">
-          <span className="text-[12.5px] font-semibold text-body">Open Discrepancies</span>
+          <span className="text-[12.5px] font-semibold text-body">{t('nightAudit.openDiscrepancies')}</span>
           <div className="mt-3 text-[28px] font-semibold tracking-[-.02em]">{run.openDiscrepancies}</div>
-          <div className="mt-3.5 flex gap-2"><span className="rounded-lg bg-critical-bg px-2 py-0.5 text-xs font-semibold text-critical">{formatAmount(run.discrepancyAmount)} net variance</span></div>
-          <div className="mt-2.5 text-xs text-faint">Deposits &amp; cash drawer</div>
+          <div className="mt-3.5 flex gap-2"><span className="rounded-lg bg-critical-bg px-2 py-0.5 text-xs font-semibold text-critical">{t('nightAudit.netVariance', { amount: formatAmount(run.discrepancyAmount) })}</span></div>
+          <div className="mt-2.5 text-xs text-faint">{t('nightAudit.depositsCashDrawer')}</div>
         </div>
         <div className="glass-card p-5">
-          <span className="text-[12.5px] font-semibold text-body">Revenue Posted</span>
+          <span className="text-[12.5px] font-semibold text-body">{t('nightAudit.revenuePosted')}</span>
           <div className="mt-3 text-[28px] font-semibold tracking-[-.02em]">{formatAmount(run.revenuePosted)}</div>
-          <div className="mt-3.5 flex gap-2"><span className="rounded-lg bg-success-bg px-2 py-0.5 text-xs font-semibold text-success">Balanced to ledger</span></div>
-          <div className="mt-2.5 text-xs text-faint">{run.transactionCount.toLocaleString('en-US')} transactions</div>
+          <div className="mt-3.5 flex gap-2"><span className="rounded-lg bg-success-bg px-2 py-0.5 text-xs font-semibold text-success">{t('nightAudit.balancedToLedger')}</span></div>
+          <div className="mt-2.5 text-xs text-faint">{t('nightAudit.transactionsCount', { n: run.transactionCount.toLocaleString('en-US') })}</div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.5fr_1fr]">
         <div className="glass-card p-6">
-          <h3 className="mb-4.5 text-base font-semibold">Reconciliation Checklist</h3>
+          <h3 className="mb-4.5 text-base font-semibold">{t('nightAudit.reconciliationChecklist')}</h3>
           <div className="flex flex-col gap-0.5">
             {run.checklist.map((row) => {
               const meta = CHECKLIST_STATUS_META[row.status];
@@ -111,7 +113,7 @@ export default function NightAudit({ activePropertyId }) {
                       disabled={updatingId === row.id}
                       className="icon-btn flex-none rounded-[10px] px-3 py-1.5 text-[12px] font-semibold text-ink-soft disabled:opacity-50"
                     >
-                      {updatingId === row.id ? 'Saving…' : 'Mark done'}
+                      {updatingId === row.id ? t('common.saving') : t('nightAudit.markDone')}
                     </button>
                   )}
                 </div>
@@ -120,8 +122,8 @@ export default function NightAudit({ activePropertyId }) {
           </div>
         </div>
         <div className="glass-card flex flex-col p-6">
-          <h3 className="mb-1 text-base font-semibold">Close Progress</h3>
-          <p className="mb-5 text-[12.5px] text-faint">Night of {new Date(run.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+          <h3 className="mb-1 text-base font-semibold">{t('nightAudit.closeProgress')}</h3>
+          <p className="mb-5 text-[12.5px] text-faint">{t('nightAudit.nightOf', { date: formatShortDate(run.date, t, { withYear: true }) })}</p>
           <div className="grid flex-1 place-items-center">
             <svg viewBox="0 0 160 160" className="h-[150px] w-[150px]">
               <circle cx="80" cy="80" r="66" fill="none" stroke="rgba(60,70,110,.1)" strokeWidth="14" />
@@ -130,10 +132,10 @@ export default function NightAudit({ activePropertyId }) {
                 strokeDasharray={circumference.toFixed(1)} strokeDashoffset={dashOffset.toFixed(1)} transform="rotate(-90 80 80)"
               />
               <text x="80" y="76" textAnchor="middle" fontSize="30" fontWeight="600" fill="#26241f">{run.closeProgressPct}%</text>
-              <text x="80" y="98" textAnchor="middle" fontSize="12" fill="#726f69">complete</text>
+              <text x="80" y="98" textAnchor="middle" fontSize="12" fill="#726f69">{t('nightAudit.complete')}</text>
             </svg>
           </div>
-          <button className="btn-primary mt-3 w-full py-3.5 text-sm">Resume close</button>
+          <button className="btn-primary mt-3 w-full py-3.5 text-sm">{t('nightAudit.resumeClose')}</button>
         </div>
       </div>
     </div>

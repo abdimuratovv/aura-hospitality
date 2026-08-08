@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { formatAmount } from '../../lib/format.js';
+import { useLanguage } from '../../lib/i18n/LanguageContext.jsx';
 
 export default function RevenueLeakage({ activePropertyId }) {
+  const { t } = useLanguage();
   const [data, setData] = useState(null);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(false);
   const [loadedFor, setLoadedFor] = useState(activePropertyId);
 
   if (loadedFor !== activePropertyId) {
@@ -24,8 +26,8 @@ export default function RevenueLeakage({ activePropertyId }) {
       .then((json) => {
         if (!cancelled) setData(json);
       })
-      .catch((err) => {
-        if (!cancelled) setError(err.message);
+      .catch(() => {
+        if (!cancelled) setError(true);
       });
     return () => {
       cancelled = true;
@@ -38,17 +40,17 @@ export default function RevenueLeakage({ activePropertyId }) {
     <div className="animate-fade-up">
       <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <div className="glass-card p-5">
-          <span className="text-[12.5px] font-semibold text-body">Identified This Cycle</span>
+          <span className="text-[12.5px] font-semibold text-body">{t('leakage.identifiedThisCycle')}</span>
           <div className="mt-3 text-[28px] font-semibold">{data ? formatAmount(data.identified) : '—'}</div>
-          <div className="mt-3 text-xs text-faint">across {data?.categories.length ?? 0} categories</div>
+          <div className="mt-3 text-xs text-faint">{t('leakage.acrossCategories', { n: data?.categories.length ?? 0 })}</div>
         </div>
         <div className="glass-card p-5">
-          <span className="text-[12.5px] font-semibold text-body">Recovered</span>
+          <span className="text-[12.5px] font-semibold text-body">{t('leakage.recovered')}</span>
           <div className="mt-3 text-[28px] font-semibold text-success">{data ? formatAmount(data.recovered) : '—'}</div>
-          <div className="mt-3 text-xs text-faint">posted back to ledger</div>
+          <div className="mt-3 text-xs text-faint">{t('leakage.postedBackToLedger')}</div>
         </div>
         <div className="glass-card p-5">
-          <span className="text-[12.5px] font-semibold text-body">Recovery Rate</span>
+          <span className="text-[12.5px] font-semibold text-body">{t('leakage.recoveryRate')}</span>
           <div className="mt-3 text-[28px] font-semibold">{data?.recoveryRatePct ?? '—'}%</div>
           <div className="mt-3.5 h-[7px] overflow-hidden rounded-[5px] bg-[rgba(60,70,110,.1)]">
             <div className="h-full rounded-[5px]" style={{ width: `${data?.recoveryRatePct ?? 0}%`, background: 'linear-gradient(90deg,#5fbf99,#1f9268)' }} />
@@ -56,11 +58,11 @@ export default function RevenueLeakage({ activePropertyId }) {
         </div>
       </div>
       <div className="glass-card p-6">
-        <h3 className="mb-1 text-base font-semibold">Leakage by Category</h3>
-        <p className="mb-5.5 text-[12.5px] text-faint">Identified value · current billing cycle</p>
+        <h3 className="mb-1 text-base font-semibold">{t('leakage.leakageByCategory')}</h3>
+        <p className="mb-5.5 text-[12.5px] text-faint">{t('leakage.identifiedValueCycle')}</p>
 
-        {error && <div className="text-sm text-critical">{error}</div>}
-        {!error && !data && <div className="text-sm text-faint">Loading…</div>}
+        {error && <div className="text-sm text-critical">{t('common.loadError')}</div>}
+        {!error && !data && <div className="text-sm text-faint">{t('common.loading')}</div>}
 
         <div className="flex flex-col gap-5">
           {data?.categories.map((l) => (
@@ -78,8 +80,8 @@ export default function RevenueLeakage({ activePropertyId }) {
                 </div>
               </div>
               <div className="mt-1.5 flex items-baseline justify-between text-[11px] text-faint">
-                <span>{formatAmount(l.recovered)} recovered</span>
-                <span>{l.recoveryRatePct}% of identified</span>
+                <span>{t('leakage.recoveredLine', { amount: formatAmount(l.recovered) })}</span>
+                <span>{t('leakage.ofIdentified', { pct: l.recoveryRatePct })}</span>
               </div>
             </div>
           ))}

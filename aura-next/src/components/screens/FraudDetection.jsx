@@ -2,14 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { FRAUD_SEVERITY_META, formatAmount } from '../../lib/format.js';
+import { useLanguage } from '../../lib/i18n/LanguageContext.jsx';
 
-const STATUS_LABEL = { OPEN: 'Open', INVESTIGATING: 'Investigating', RESOLVED: 'Resolved', FALSE_POSITIVE: 'False positive' };
-const STATUS_OPTIONS = Object.keys(STATUS_LABEL);
 const OPEN_STATUSES = ['OPEN', 'INVESTIGATING'];
 
 export default function FraudDetection({ activePropertyId }) {
+  const { t } = useLanguage();
   const [rows, setRows] = useState(null);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(false);
   const [updatingId, setUpdatingId] = useState(null);
   const [loadedFor, setLoadedFor] = useState(activePropertyId);
 
@@ -28,9 +28,9 @@ export default function FraudDetection({ activePropertyId }) {
         const json = await res.json();
         if (cancelled) return;
         setRows(json.rows);
-        setError('');
-      } catch (err) {
-        if (!cancelled) setError(err.message);
+        setError(false);
+      } catch {
+        if (!cancelled) setError(true);
       }
     }
     load();
@@ -38,6 +38,14 @@ export default function FraudDetection({ activePropertyId }) {
       cancelled = true;
     };
   }, [activePropertyId]);
+
+  const STATUS_LABEL = {
+    OPEN: t('fraud.statusOpen'),
+    INVESTIGATING: t('fraud.statusInvestigating'),
+    RESOLVED: t('fraud.statusResolved'),
+    FALSE_POSITIVE: t('fraud.statusFalsePositive'),
+  };
+  const STATUS_OPTIONS = Object.keys(STATUS_LABEL);
 
   async function updateStatus(id, status) {
     setUpdatingId(id);
@@ -67,42 +75,42 @@ export default function FraudDetection({ activePropertyId }) {
     <div className="animate-fade-up">
       <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <div className="glass-card p-5">
-          <span className="text-[12.5px] font-semibold text-body">Open Cases</span>
+          <span className="text-[12.5px] font-semibold text-body">{t('fraud.openCases')}</span>
           <div className="mt-3 text-[28px] font-semibold">{rows ? openRows.length : '—'}</div>
-          <div className="mt-3 text-xs text-faint"><span className="font-semibold text-critical">{critical} critical</span> · {high} high · {medium} medium</div>
+          <div className="mt-3 text-xs text-faint">{t('fraud.countsLine', { critical, high, medium })}</div>
         </div>
         <div className="glass-card p-5">
-          <span className="text-[12.5px] font-semibold text-body">Amount at Risk</span>
+          <span className="text-[12.5px] font-semibold text-body">{t('fraud.amountAtRisk')}</span>
           <div className="mt-3 text-[28px] font-semibold">{formatAmount(amountAtRisk)}</div>
-          <div className="mt-3 text-xs text-faint">across {openRows.length} open cases</div>
+          <div className="mt-3 text-xs text-faint">{t('fraud.acrossOpenCases', { n: openRows.length })}</div>
         </div>
         <div className="glass-card p-5">
-          <span className="text-[12.5px] font-semibold text-body">Model Precision</span>
+          <span className="text-[12.5px] font-semibold text-body">{t('fraud.modelPrecision')}</span>
           <div className="mt-3 text-[28px] font-semibold">94.6%</div>
-          <div className="mt-3 text-xs text-faint">last 30 days · 1.2% false positive</div>
+          <div className="mt-3 text-xs text-faint">{t('fraud.last30Days')}</div>
         </div>
       </div>
 
       <div className="glass-card p-2 pb-3">
         <div className="flex flex-wrap items-center gap-2.5 p-4 pb-3.5">
-          <h3 className="flex-1 text-base font-semibold">Open Investigations</h3>
-          <span className="rounded-[11px] bg-info-bg px-3 py-1.5 text-[12.5px] font-medium text-brand">All severities</span>
-          <span className="rounded-[11px] border border-[rgba(60,70,110,.14)] px-3 py-1.5 text-[12.5px] font-medium text-body">Sort: Confidence</span>
+          <h3 className="flex-1 text-base font-semibold">{t('fraud.openInvestigations')}</h3>
+          <span className="rounded-[11px] bg-info-bg px-3 py-1.5 text-[12.5px] font-medium text-brand">{t('fraud.allSeverities')}</span>
+          <span className="rounded-[11px] border border-[rgba(60,70,110,.14)] px-3 py-1.5 text-[12.5px] font-medium text-body">{t('fraud.sortConfidence')}</span>
         </div>
         <div className="table-scroll">
           <div className="table-min">
             <div className="grid grid-cols-[1fr_1.2fr_.8fr_.7fr_.9fr_.7fr_1fr] gap-3 border-b border-[rgba(60,70,110,.1)] px-4.5 pb-2.5 text-[11.5px] font-semibold uppercase tracking-[.04em] text-faint">
-              <span>Severity</span><span>Pattern</span><span>Agent</span><span>Property</span><span>Confidence</span><span className="text-right">Amount</span><span className="text-right">Status</span>
+              <span>{t('fraud.severity')}</span><span>{t('fraud.pattern')}</span><span>{t('fraud.agent')}</span><span>{t('fraud.property')}</span><span>{t('fraud.confidence')}</span><span className="text-right">{t('fraud.amount')}</span><span className="text-right">{t('fraud.status')}</span>
             </div>
 
-            {error && <div className="px-4.5 py-6 text-sm text-critical">{error}</div>}
-            {!error && !rows && <div className="px-4.5 py-6 text-sm text-faint">Loading…</div>}
+            {error && <div className="px-4.5 py-6 text-sm text-critical">{t('common.loadError')}</div>}
+            {!error && !rows && <div className="px-4.5 py-6 text-sm text-faint">{t('common.loading')}</div>}
 
             {rows?.map((r) => {
               const meta = FRAUD_SEVERITY_META[r.severity];
               return (
                 <div key={r.id} className="grid grid-cols-[1fr_1.2fr_.8fr_.7fr_.9fr_.7fr_1fr] items-center gap-3 border-b border-[rgba(60,70,110,.06)] px-4.5 py-3.5">
-                  <span className="justify-self-start rounded-lg px-2.5 py-1 text-xs font-semibold" style={{ color: meta.color, background: meta.bg }}>{meta.label}</span>
+                  <span className="justify-self-start rounded-lg px-2.5 py-1 text-xs font-semibold" style={{ color: meta.color, background: meta.bg }}>{t(meta.label)}</span>
                   <span className="text-[13.5px] font-medium text-ink">{r.pattern}</span>
                   <span className="text-[13px] text-muted">{r.agent}</span>
                   <span className="text-[13px] text-muted">{r.property.name}</span>

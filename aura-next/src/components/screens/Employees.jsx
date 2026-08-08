@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { RISK_BAND_META, formatRelativeDay, initialsFromName } from '../../lib/format.js';
+import { useLanguage } from '../../lib/i18n/LanguageContext.jsx';
 
 export default function Employees({ activePropertyId }) {
+  const { t } = useLanguage();
   const [rows, setRows] = useState(null);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(false);
   const [loadedFor, setLoadedFor] = useState(activePropertyId);
 
   if (loadedFor !== activePropertyId) {
@@ -23,9 +25,9 @@ export default function Employees({ activePropertyId }) {
         const json = await res.json();
         if (cancelled) return;
         setRows(json.rows);
-        setError('');
-      } catch (err) {
-        if (!cancelled) setError(err.message);
+        setError(false);
+      } catch {
+        if (!cancelled) setError(true);
       }
     }
     load();
@@ -43,11 +45,11 @@ export default function Employees({ activePropertyId }) {
               className="grid grid-cols-[1.8fr_1.1fr_1fr_1.4fr_.8fr] gap-3 border-b border-[rgba(20,30,70,.08)] px-5.5 py-4 text-[11.5px] font-semibold uppercase tracking-[.04em] text-faint"
               style={{ background: 'linear-gradient(145deg,rgba(20,30,70,.035),rgba(20,30,70,.008))' }}
             >
-              <span>Employee</span><span>Property</span><span>Last activity</span><span>Risk score</span><span className="text-right">Band</span>
+              <span>{t('employees.employee')}</span><span>{t('employees.property')}</span><span>{t('employees.lastActivity')}</span><span>{t('employees.riskScore')}</span><span className="text-right">{t('employees.band')}</span>
             </div>
 
-            {error && <div className="px-5.5 py-6 text-sm text-critical">{error}</div>}
-            {!error && !rows && <div className="px-5.5 py-6 text-sm text-faint">Loading…</div>}
+            {error && <div className="px-5.5 py-6 text-sm text-critical">{t('common.loadError')}</div>}
+            {!error && !rows && <div className="px-5.5 py-6 text-sm text-faint">{t('common.loading')}</div>}
 
             {rows?.map((e) => {
               const band = RISK_BAND_META[e.band];
@@ -66,14 +68,14 @@ export default function Employees({ activePropertyId }) {
                     </div>
                   </div>
                   <span className="text-[13px] text-muted">{e.property.name}</span>
-                  <span className="text-[13px] text-muted">{formatRelativeDay(e.lastActivityAt)}</span>
+                  <span className="text-[13px] text-muted">{formatRelativeDay(e.lastActivityAt, t)}</span>
                   <span className="flex items-center gap-2.5">
                     <span className="h-[7px] flex-1 overflow-hidden rounded bg-[rgba(60,70,110,.1)]">
                       <span className="block h-full rounded" style={{ width: `${e.riskScore}%`, background: 'linear-gradient(90deg,#5fbf99,#e0c65a,#e5563f)' }} />
                     </span>
                     <span className="w-6 text-[12.5px] font-semibold">{e.riskScore}</span>
                   </span>
-                  <span className="justify-self-end rounded-lg px-2.5 py-1 text-xs font-semibold" style={{ color: band.color, background: band.bg }}>{band.label}</span>
+                  <span className="justify-self-end rounded-lg px-2.5 py-1 text-xs font-semibold" style={{ color: band.color, background: band.bg }}>{t(band.label)}</span>
                 </div>
               );
             })}

@@ -1,10 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useLanguage } from '../../lib/i18n/LanguageContext.jsx';
 
 export default function Reports() {
+  const { t } = useLanguage();
   const [rows, setRows] = useState(null);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     fetch('/api/reports')
@@ -13,11 +15,11 @@ export default function Reports() {
         return res.json();
       })
       .then((json) => setRows(json.rows))
-      .catch((err) => setError(err.message));
+      .catch(() => setError(true));
   }, []);
 
-  if (error) return <div className="text-sm text-critical">{error}</div>;
-  if (!rows) return <div className="text-sm text-faint">Loading…</div>;
+  if (error) return <div className="text-sm text-critical">{t('common.loadError')}</div>;
+  if (!rows) return <div className="text-sm text-faint">{t('common.loading')}</div>;
 
   return (
     <div className="grid animate-fade-up grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -35,8 +37,8 @@ export default function Reports() {
           <h3 className="mb-1.5 text-[15px] font-semibold">{r.title}</h3>
           <p className="mb-4 flex-1 text-[12.5px] leading-relaxed text-body">{r.description}</p>
           <div className="flex items-center justify-between border-t border-[rgba(60,70,110,.08)] pt-3.5">
-            <span className="text-[11.5px] text-faint"><span className="font-semibold text-muted">{r.frequency}</span> · updated {r.lastUpdatedLabel}</span>
-            <button className="btn-outline px-3.5 py-2 text-[12.5px] font-semibold text-brand">Open</button>
+            <span className="text-[11.5px] text-faint"><span className="font-semibold text-muted">{r.frequency}</span> · {t('reports.updated', { label: r.lastUpdatedLabel })}</span>
+            <button className="btn-outline px-3.5 py-2 text-[12.5px] font-semibold text-brand">{t('reports.open')}</button>
           </div>
         </div>
       ))}

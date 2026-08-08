@@ -1,7 +1,9 @@
 import Icon from './Icon.jsx';
-import { navList } from '../lib/data.js';
+import { SCREEN_IDS } from '../lib/data.js';
+import { useLanguage } from '../lib/i18n/LanguageContext.jsx';
 
 export default function Sidebar({ screen, setScreen, collapsed, toggleCollapsed, mobileOpen, closeMobile }) {
+  const { t } = useLanguage();
   const showLabels = !collapsed;
 
   const handleNav = (id) => {
@@ -37,8 +39,9 @@ export default function Sidebar({ screen, setScreen, collapsed, toggleCollapsed,
         </div>
 
         <nav className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto">
-          {navList.map(([id, label]) => {
+          {SCREEN_IDS.map((id) => {
             const active = screen === id;
+            const label = t(`nav.${id}`);
             return (
               <button
                 key={id}
@@ -55,11 +58,11 @@ export default function Sidebar({ screen, setScreen, collapsed, toggleCollapsed,
 
         <button
           onClick={toggleCollapsed}
-          title="Collapse"
+          title={t('nav.collapse')}
           className={`mt-2 flex items-center gap-3 rounded-2xl border border-transparent bg-transparent px-3.5 py-2.5 text-[13.5px] font-medium text-body cursor-pointer ${collapsed ? 'justify-center' : 'justify-start'}`}
         >
           <Icon name={collapsed ? 'expand' : 'collapse'} />
-          {showLabels && <span>Collapse</span>}
+          {showLabels && <span>{t('nav.collapse')}</span>}
         </button>
       </aside>
     </>

@@ -2,9 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { initialsFromName } from '../../lib/format.js';
-
-const NAV_ITEMS = ['Profile', 'Security & Access', 'Notifications', 'Detection Rules', 'Integrations', 'Data & Privacy'];
-const UNBUILT_TABS = ['Detection Rules', 'Integrations', 'Data & Privacy'];
+import { useLanguage } from '../../lib/i18n/LanguageContext.jsx';
 
 function Toggle({ on, onClick }) {
   return (
@@ -24,8 +22,20 @@ function Toggle({ on, onClick }) {
 const field = 'soft-input-plain px-3.5 py-3 text-sm';
 const disabledField = `${field} cursor-not-allowed opacity-70`;
 
+const TAB_IDS = ['profile', 'security', 'notifications', 'detectionRules', 'integrations', 'dataPrivacy'];
+const UNBUILT_TAB_IDS = ['detectionRules', 'integrations', 'dataPrivacy'];
+const TAB_LABEL_KEYS = {
+  profile: 'settings.navProfile',
+  security: 'settings.navSecurity',
+  notifications: 'settings.navNotifications',
+  detectionRules: 'settings.navDetectionRules',
+  integrations: 'settings.navIntegrations',
+  dataPrivacy: 'settings.navDataPrivacy',
+};
+
 export default function Settings() {
-  const [tab, setTab] = useState('Profile');
+  const { t } = useLanguage();
+  const [tab, setTab] = useState('profile');
   const [profile, setProfile] = useState(null);
   const [name, setName] = useState('');
   const [error, setError] = useState('');
@@ -47,8 +57,8 @@ export default function Settings() {
         setProfile(json);
         setName(json.name);
       })
-      .catch((err) => setError(err.message));
-  }, []);
+      .catch(() => setError(t('common.loadError')));
+  }, [t]);
 
   async function save() {
     setSaveState('saving');
@@ -79,11 +89,11 @@ export default function Settings() {
   async function changePassword() {
     setPasswordError('');
     if (newPassword.length < 8) {
-      setPasswordError('New password must be at least 8 characters');
+      setPasswordError(t('settings.passwordTooShort'));
       return;
     }
     if (newPassword !== confirmPassword) {
-      setPasswordError('New password and confirmation do not match');
+      setPasswordError(t('settings.passwordMismatch'));
       return;
     }
     setPasswordState('saving');
@@ -100,41 +110,41 @@ export default function Settings() {
       setConfirmPassword('');
       setTimeout(() => setPasswordState('idle'), 1800);
     } else {
-      setPasswordError(json.error || 'Failed to change password');
+      setPasswordError(json.error || t('settings.passwordChangeFailed'));
       setPasswordState('idle');
     }
   }
 
   if (error) return <div className="text-sm text-critical">{error}</div>;
-  if (!profile) return <div className="text-sm text-faint">Loading…</div>;
+  if (!profile) return <div className="text-sm text-faint">{t('common.loading')}</div>;
 
-  const showSaveBar = !UNBUILT_TABS.includes(tab);
+  const showSaveBar = !UNBUILT_TAB_IDS.includes(tab);
 
   return (
     <div className="grid animate-fade-up grid-cols-1 gap-4 lg:grid-cols-[236px_1fr]">
       <div className="glass-card h-fit p-3">
         <div className="flex flex-col gap-1">
-          {NAV_ITEMS.map((label) => (
+          {TAB_IDS.map((id) => (
             <span
-              key={label}
-              onClick={() => setTab(label)}
+              key={id}
+              onClick={() => setTab(id)}
               className={
-                tab === label
+                tab === id
                   ? 'cursor-pointer rounded-xl border border-[rgba(79,140,255,.22)] px-3.5 py-2.5 text-[13.5px] font-semibold text-brand shadow-[inset_0_1px_1px_rgba(255,255,255,.7)]'
                   : 'cursor-pointer rounded-xl px-3.5 py-2.5 text-[13.5px] font-medium text-muted'
               }
-              style={tab === label ? { background: 'linear-gradient(150deg,rgba(79,140,255,.14),rgba(79,140,255,.05) 60%)' } : undefined}
+              style={tab === id ? { background: 'linear-gradient(150deg,rgba(79,140,255,.14),rgba(79,140,255,.05) 60%)' } : undefined}
             >
-              {label}
+              {t(TAB_LABEL_KEYS[id])}
             </span>
           ))}
         </div>
       </div>
 
       <div className="glass-card p-7">
-        {tab === 'Profile' && (
+        {tab === 'profile' && (
           <>
-            <h3 className="mb-5.5 text-[17px] font-semibold">Profile</h3>
+            <h3 className="mb-5.5 text-[17px] font-semibold">{t('settings.profileHeading')}</h3>
             <div className="mb-6.5 flex items-center gap-4">
               <span className="flex h-[60px] w-[60px] items-center justify-center rounded-full text-xl font-semibold text-white" style={{ background: 'linear-gradient(160deg,#6b9,#489)' }}>
                 {initialsFromName(profile.name)}
@@ -142,52 +152,52 @@ export default function Settings() {
               <div>
                 <div className="text-[15px] font-semibold">{profile.name}</div>
                 <div className="mb-2 text-[13px] text-faint">{profile.role} · Meridian Hotels Group</div>
-                <button className="btn-outline px-3.5 py-1.5 text-[12.5px] font-semibold text-ink-soft">Change photo</button>
+                <button className="btn-outline px-3.5 py-1.5 text-[12.5px] font-semibold text-ink-soft">{t('settings.changePhoto')}</button>
               </div>
             </div>
 
             <div className="grid grid-cols-1 gap-4.5 lg:grid-cols-2">
               <div>
-                <label className="mb-1.5 block text-[12.5px] font-semibold text-muted">Full name</label>
+                <label className="mb-1.5 block text-[12.5px] font-semibold text-muted">{t('settings.fullName')}</label>
                 <input value={name} onChange={(e) => setName(e.target.value)} className={field} />
               </div>
               <div>
-                <label className="mb-1.5 block text-[12.5px] font-semibold text-muted">Work email</label>
+                <label className="mb-1.5 block text-[12.5px] font-semibold text-muted">{t('settings.workEmail')}</label>
                 <input value={profile.email} readOnly className={disabledField} />
               </div>
               <div>
-                <label className="mb-1.5 block text-[12.5px] font-semibold text-muted">Role</label>
+                <label className="mb-1.5 block text-[12.5px] font-semibold text-muted">{t('settings.role')}</label>
                 <input value={profile.role} readOnly className={disabledField} />
               </div>
               <div>
-                <label className="mb-1.5 block text-[12.5px] font-semibold text-muted">Default property</label>
+                <label className="mb-1.5 block text-[12.5px] font-semibold text-muted">{t('settings.defaultProperty')}</label>
                 <input value={profile.defaultProperty?.name ?? '—'} readOnly className={disabledField} />
               </div>
             </div>
           </>
         )}
 
-        {tab === 'Security & Access' && (
+        {tab === 'security' && (
           <>
-            <h3 className="mb-5.5 text-[17px] font-semibold">Security & Access</h3>
+            <h3 className="mb-5.5 text-[17px] font-semibold">{t('settings.securityHeading')}</h3>
             <div className="flex items-center justify-between py-3">
-              <div><div className="text-sm font-semibold">Two-factor authentication</div><div className="text-[12.5px] text-faint">Required for all finance roles</div></div>
+              <div><div className="text-sm font-semibold">{t('settings.twoFactor')}</div><div className="text-[12.5px] text-faint">{t('settings.twoFactorDesc')}</div></div>
               <Toggle on={profile.twoFactorEnabled} onClick={() => toggle('twoFactorEnabled')} />
             </div>
 
             <div className="mt-4 border-t border-[rgba(60,70,110,.08)] pt-5">
-              <div className="mb-4 text-sm font-semibold">Change password</div>
+              <div className="mb-4 text-sm font-semibold">{t('settings.changePassword')}</div>
               <div className="grid grid-cols-1 gap-4.5 lg:grid-cols-2">
                 <div className="lg:col-span-2">
-                  <label className="mb-1.5 block text-[12.5px] font-semibold text-muted">Current password</label>
+                  <label className="mb-1.5 block text-[12.5px] font-semibold text-muted">{t('settings.currentPassword')}</label>
                   <input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} className={field} />
                 </div>
                 <div>
-                  <label className="mb-1.5 block text-[12.5px] font-semibold text-muted">New password</label>
+                  <label className="mb-1.5 block text-[12.5px] font-semibold text-muted">{t('settings.newPassword')}</label>
                   <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className={field} />
                 </div>
                 <div>
-                  <label className="mb-1.5 block text-[12.5px] font-semibold text-muted">Confirm new password</label>
+                  <label className="mb-1.5 block text-[12.5px] font-semibold text-muted">{t('settings.confirmNewPassword')}</label>
                   <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className={field} />
                 </div>
               </div>
@@ -198,48 +208,48 @@ export default function Settings() {
                   disabled={passwordState === 'saving' || !currentPassword || !newPassword || !confirmPassword}
                   className="btn-primary px-6.5 py-3 text-sm disabled:opacity-60"
                 >
-                  {passwordState === 'saving' ? 'Updating…' : 'Update password'}
+                  {passwordState === 'saving' ? t('settings.updating') : t('settings.updatePassword')}
                 </button>
-                {passwordState === 'saved' && <span className="text-[13px] font-medium text-success">Password updated</span>}
+                {passwordState === 'saved' && <span className="text-[13px] font-medium text-success">{t('settings.passwordUpdated')}</span>}
               </div>
             </div>
           </>
         )}
 
-        {tab === 'Notifications' && (
+        {tab === 'notifications' && (
           <>
-            <h3 className="mb-5.5 text-[17px] font-semibold">Notifications</h3>
+            <h3 className="mb-5.5 text-[17px] font-semibold">{t('settings.notificationsHeading')}</h3>
             <div className="flex items-center justify-between py-3">
-              <div><div className="text-sm font-semibold">Critical fraud alerts by email</div><div className="text-[12.5px] text-faint">Real-time when confidence &gt; 90%</div></div>
+              <div><div className="text-sm font-semibold">{t('settings.criticalFraudEmail')}</div><div className="text-[12.5px] text-faint">{t('settings.criticalFraudDesc')}</div></div>
               <Toggle on={profile.criticalAlertsEmail} onClick={() => toggle('criticalAlertsEmail')} />
             </div>
             <div className="flex items-center justify-between py-3">
-              <div><div className="text-sm font-semibold">Weekly executive digest</div><div className="text-[12.5px] text-faint">Monday 07:00 · portfolio summary</div></div>
+              <div><div className="text-sm font-semibold">{t('settings.weeklyDigest')}</div><div className="text-[12.5px] text-faint">{t('settings.weeklyDigestDesc')}</div></div>
               <Toggle on={profile.weeklyDigest} onClick={() => toggle('weeklyDigest')} />
             </div>
           </>
         )}
 
-        {UNBUILT_TABS.includes(tab) && (
+        {UNBUILT_TAB_IDS.includes(tab) && (
           <>
-            <h3 className="mb-2 text-[17px] font-semibold">{tab}</h3>
-            <p className="text-[13.5px] text-faint">Not built yet — there&apos;s no backing configuration for this section in the current release.</p>
+            <h3 className="mb-2 text-[17px] font-semibold">{t(TAB_LABEL_KEYS[tab])}</h3>
+            <p className="text-[13.5px] text-faint">{t('settings.notBuiltYet')}</p>
           </>
         )}
 
         {showSaveBar && (
           <div className="mt-6 flex items-center gap-3 border-t border-[rgba(60,70,110,.08)] pt-5">
             <button onClick={save} disabled={saveState === 'saving'} className="btn-primary px-6.5 py-3.5 text-sm disabled:opacity-60">
-              {saveState === 'saving' ? 'Saving…' : 'Save changes'}
+              {saveState === 'saving' ? t('common.saving') : t('common.save')}
             </button>
             <button
               onClick={() => { setName(profile.name); }}
               className="rounded-full border border-white/30 px-6.5 py-3.5 text-sm font-medium text-muted"
               style={{ background: 'linear-gradient(145deg,rgba(255,255,255,.16),rgba(255,255,255,.02) 60%)' }}
             >
-              Cancel
+              {t('common.cancel')}
             </button>
-            {saveState === 'saved' && <span className="text-[13px] font-medium text-success">Saved</span>}
+            {saveState === 'saved' && <span className="text-[13px] font-medium text-success">{t('common.saved')}</span>}
           </div>
         )}
       </div>

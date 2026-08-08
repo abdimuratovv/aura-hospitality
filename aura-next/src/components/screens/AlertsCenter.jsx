@@ -2,15 +2,16 @@
 
 import { useEffect, useState } from 'react';
 import { ALERT_SEVERITY_META, timeAgo } from '../../lib/format.js';
+import { useLanguage } from '../../lib/i18n/LanguageContext.jsx';
 
 const NEXT_STATUS = { OPEN: 'ACKNOWLEDGED', ACKNOWLEDGED: 'RESOLVED' };
-const ACTION_LABEL = { OPEN: 'Acknowledge', ACKNOWLEDGED: 'Resolve' };
 
 const SEVERITIES = ['CRITICAL', 'WARNING', 'INFO'];
 
 export default function AlertsCenter({ activePropertyId }) {
+  const { t } = useLanguage();
   const [rows, setRows] = useState(null);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(false);
   const [updatingId, setUpdatingId] = useState(null);
   const [severityFilter, setSeverityFilter] = useState(null);
   const [loadedFor, setLoadedFor] = useState(activePropertyId);
@@ -30,9 +31,9 @@ export default function AlertsCenter({ activePropertyId }) {
         const json = await res.json();
         if (cancelled) return;
         setRows(json.rows);
-        setError('');
-      } catch (err) {
-        if (!cancelled) setError(err.message);
+        setError(false);
+      } catch {
+        if (!cancelled) setError(true);
       }
     }
     load();
@@ -40,6 +41,8 @@ export default function AlertsCenter({ activePropertyId }) {
       cancelled = true;
     };
   }, [activePropertyId]);
+
+  const ACTION_LABEL = { OPEN: t('alertsCenter.acknowledge'), ACKNOWLEDGED: t('alertsCenter.resolve') };
 
   async function advance(alert) {
     const nextStatus = NEXT_STATUS[alert.status];
@@ -77,7 +80,7 @@ export default function AlertsCenter({ activePropertyId }) {
           className={!severityFilter ? activePillClass : 'pill px-4 py-2.5 text-sm'}
           style={!severityFilter ? activePillStyle : undefined}
         >
-          All · {total}
+          {t('alertsCenter.all')} · {total}
         </span>
         {SEVERITIES.map((sev) => (
           <span
@@ -86,14 +89,14 @@ export default function AlertsCenter({ activePropertyId }) {
             className={severityFilter === sev ? activePillClass : 'pill px-4 py-2.5 text-sm'}
             style={severityFilter === sev ? activePillStyle : undefined}
           >
-            {sev === 'CRITICAL' ? 'Critical' : sev === 'WARNING' ? 'Warning' : 'Info'} · {counts[sev]}
+            {t(`status.${sev.toLowerCase()}`)} · {counts[sev]}
           </span>
         ))}
       </div>
       <div className="glass-card p-2">
-        {error && <div className="px-4 py-6 text-sm text-critical">{error}</div>}
-        {!error && !rows && <div className="px-4 py-6 text-sm text-faint">Loading…</div>}
-        {!error && rows && visibleRows.length === 0 && <div className="px-4 py-6 text-sm text-faint">No alerts match this filter.</div>}
+        {error && <div className="px-4 py-6 text-sm text-critical">{t('common.loadError')}</div>}
+        {!error && !rows && <div className="px-4 py-6 text-sm text-faint">{t('common.loading')}</div>}
+        {!error && rows && visibleRows.length === 0 && <div className="px-4 py-6 text-sm text-faint">{t('alertsCenter.noMatch')}</div>}
 
         {visibleRows?.map((a) => {
           const meta = ALERT_SEVERITY_META[a.severity];
@@ -104,21 +107,21 @@ export default function AlertsCenter({ activePropertyId }) {
               <div className="min-w-0 flex-1">
                 <div className="mb-0.5 flex items-center gap-2.5">
                   <span className="text-sm font-semibold">{a.title}</span>
-                  <span className="rounded-md px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-[.04em]" style={{ color: meta.color, background: meta.bg }}>{meta.label}</span>
+                  <span className="rounded-md px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-[.04em]" style={{ color: meta.color, background: meta.bg }}>{t(meta.label)}</span>
                 </div>
                 <div className="text-[12.5px] text-faint">{a.meta}</div>
               </div>
-              <span className="flex-none text-xs text-faint md:ml-auto">{timeAgo(a.createdAt)}</span>
+              <span className="flex-none text-xs text-faint md:ml-auto">{timeAgo(a.createdAt, t)}</span>
               {actionLabel ? (
                 <button
                   onClick={() => advance(a)}
                   disabled={updatingId === a.id}
                   className="icon-btn flex-none rounded-[11px] px-3.5 py-2 text-[12.5px] font-semibold text-ink-soft disabled:opacity-50"
                 >
-                  {updatingId === a.id ? 'Saving…' : actionLabel}
+                  {updatingId === a.id ? t('common.saving') : actionLabel}
                 </button>
               ) : (
-                <span className="flex-none rounded-[11px] px-3.5 py-2 text-[12.5px] font-semibold text-success">Resolved</span>
+                <span className="flex-none rounded-[11px] px-3.5 py-2 text-[12.5px] font-semibold text-success">{t('common.resolved')}</span>
               )}
             </div>
           );
