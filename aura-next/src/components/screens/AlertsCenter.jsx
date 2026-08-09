@@ -69,8 +69,8 @@ export default function AlertsCenter({ activePropertyId }) {
   const total = rows?.length ?? 0;
   const visibleRows = severityFilter ? rows?.filter((a) => a.severity === severityFilter) : rows;
 
-  const activePillClass = 'cursor-pointer rounded-xl border border-white/80 px-4 py-2.5 text-sm font-semibold text-brand';
-  const activePillStyle = { background: 'linear-gradient(150deg,rgba(255,255,255,.95),rgba(255,255,255,.55))', boxShadow: 'inset 0 1px 1px rgba(255,255,255,.9),0 8px 18px -12px rgba(79,140,255,.5)' };
+  const activePillClass = 'cursor-pointer rounded-xl border border-[rgba(79,140,255,.28)] px-4 py-2.5 text-sm font-semibold text-brand';
+  const activePillStyle = { background: 'linear-gradient(150deg,rgba(79,140,255,.16),rgba(79,140,255,.06) 60%)', boxShadow: 'inset 0 1px 1px rgba(255,255,255,.5),0 8px 18px -12px rgba(79,140,255,.5)' };
 
   return (
     <div className="animate-fade-up">
@@ -102,7 +102,7 @@ export default function AlertsCenter({ activePropertyId }) {
           const meta = ALERT_SEVERITY_META[a.severity];
           const actionLabel = ACTION_LABEL[a.status];
           return (
-            <div key={a.id} className={`flex flex-wrap items-center gap-4 rounded-2xl border-b border-[rgba(60,70,110,.06)] px-4 py-4 ${a.status === 'RESOLVED' ? 'opacity-55' : ''}`}>
+            <div key={a.id} className={`flex flex-wrap items-center gap-4 rounded-2xl border-b border-[rgba(var(--tint-slate),.06)] px-4 py-4 ${a.status === 'RESOLVED' ? 'opacity-55' : ''}`}>
               <span className="h-2.5 w-2.5 flex-none rounded-full shadow-[0_0_0_4px_rgba(0,0,0,.03)]" style={{ background: meta.dot }} />
               <div className="min-w-0 flex-1">
                 <div className="mb-0.5 flex items-center gap-2.5">

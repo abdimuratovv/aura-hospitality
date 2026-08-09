@@ -5,8 +5,8 @@ import { CHECKLIST_STATUS_META, formatAmount, formatShortDate } from '../../lib/
 import { useLanguage } from '../../lib/i18n/LanguageContext.jsx';
 
 function shadeClass(status) {
-  if (status === 'WARNING') return 'border border-[rgba(214,158,46,.18)] bg-[rgba(214,158,46,.07)]';
-  if (status === 'CRITICAL') return 'border border-[rgba(229,86,63,.16)] bg-[rgba(229,86,63,.06)]';
+  if (status === 'WARNING') return 'border border-[rgba(var(--warning-rgb),.18)] bg-[rgba(var(--warning-rgb),.07)]';
+  if (status === 'CRITICAL') return 'border border-[rgba(var(--critical-rgb),.16)] bg-[rgba(var(--critical-rgb),.06)]';
   return '';
 }
 
@@ -74,7 +74,7 @@ export default function NightAudit({ activePropertyId }) {
         <div className="glass-card p-5">
           <span className="text-[12.5px] font-semibold text-body">{t('nightAudit.closeStatus')}</span>
           <div className="mt-3 text-[28px] font-semibold tracking-[-.02em]">{run.closeStepsCompleted} <span className="text-lg text-faint">{t('nightAudit.steps', { n: run.closeStepsTotal })}</span></div>
-          <div className="mt-3.5 h-[7px] overflow-hidden rounded-[5px] bg-[rgba(60,70,110,.1)]">
+          <div className="mt-3.5 h-[7px] overflow-hidden rounded-[5px] bg-[rgba(var(--tint-slate),.1)]">
             <div className="h-full rounded-[5px]" style={{ width: `${closePct}%`, background: 'linear-gradient(90deg,#7dabff,#4f8cff)' }} />
           </div>
           <div className="mt-2.5 text-xs text-faint">{t('nightAudit.estCompletion', { label: run.estCompletionLabel })}</div>
@@ -126,13 +126,13 @@ export default function NightAudit({ activePropertyId }) {
           <p className="mb-5 text-[12.5px] text-faint">{t('nightAudit.nightOf', { date: formatShortDate(run.date, t, { withYear: true }) })}</p>
           <div className="grid flex-1 place-items-center">
             <svg viewBox="0 0 160 160" className="h-[150px] w-[150px]">
-              <circle cx="80" cy="80" r="66" fill="none" stroke="rgba(60,70,110,.1)" strokeWidth="14" />
+              <circle cx="80" cy="80" r="66" fill="none" stroke="rgba(var(--tint-slate),.1)" strokeWidth="14" />
               <circle
                 cx="80" cy="80" r="66" fill="none" stroke="#4f8cff" strokeWidth="14" strokeLinecap="round"
                 strokeDasharray={circumference.toFixed(1)} strokeDashoffset={dashOffset.toFixed(1)} transform="rotate(-90 80 80)"
               />
-              <text x="80" y="76" textAnchor="middle" fontSize="30" fontWeight="600" fill="#26241f">{run.closeProgressPct}%</text>
-              <text x="80" y="98" textAnchor="middle" fontSize="12" fill="#726f69">{t('nightAudit.complete')}</text>
+              <text x="80" y="76" textAnchor="middle" fontSize="30" fontWeight="600" className="fill-ink">{run.closeProgressPct}%</text>
+              <text x="80" y="98" textAnchor="middle" fontSize="12" className="fill-faint">{t('nightAudit.complete')}</text>
             </svg>
           </div>
           <button className="btn-primary mt-3 w-full py-3.5 text-sm">{t('nightAudit.resumeClose')}</button>

@@ -16,6 +16,7 @@ import Employees from './screens/Employees.jsx';
 import Reports from './screens/Reports.jsx';
 import Settings from './screens/Settings.jsx';
 import { LanguageProvider, useLanguage } from '../lib/i18n/LanguageContext.jsx';
+import { ThemeProvider } from '../lib/theme/ThemeContext.jsx';
 
 const SCREENS = {
   dashboard: Dashboard,
@@ -31,9 +32,11 @@ const SCREENS = {
 
 export default function AuraApp() {
   return (
-    <LanguageProvider>
-      <AuraAppInner />
-    </LanguageProvider>
+    <ThemeProvider>
+      <LanguageProvider>
+        <AuraAppInner />
+      </LanguageProvider>
+    </ThemeProvider>
   );
 }
 
@@ -76,10 +79,7 @@ function AuraAppInner() {
   const Screen = SCREENS[screen] || Dashboard;
 
   return (
-    <div
-      className="relative h-screen w-full overflow-hidden"
-      style={{ background: 'linear-gradient(160deg,#f2f4fc 0%,#eef1fa 30%,#eaf2f5 62%,#eef8f2 100%)' }}
-    >
+    <div className="app-bg relative h-screen w-full overflow-hidden">
       <Background />
 
       {!checkingSession && !user && <LoginScreen onLoginSuccess={setUser} />}

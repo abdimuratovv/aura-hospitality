@@ -95,11 +95,11 @@ export default function FraudDetection({ activePropertyId }) {
         <div className="flex flex-wrap items-center gap-2.5 p-4 pb-3.5">
           <h3 className="flex-1 text-base font-semibold">{t('fraud.openInvestigations')}</h3>
           <span className="rounded-[11px] bg-info-bg px-3 py-1.5 text-[12.5px] font-medium text-brand">{t('fraud.allSeverities')}</span>
-          <span className="rounded-[11px] border border-[rgba(60,70,110,.14)] px-3 py-1.5 text-[12.5px] font-medium text-body">{t('fraud.sortConfidence')}</span>
+          <span className="rounded-[11px] border border-[rgba(var(--tint-slate),.14)] px-3 py-1.5 text-[12.5px] font-medium text-body">{t('fraud.sortConfidence')}</span>
         </div>
         <div className="table-scroll">
           <div className="table-min">
-            <div className="grid grid-cols-[1fr_1.2fr_.8fr_.7fr_.9fr_.7fr_1fr] gap-3 border-b border-[rgba(60,70,110,.1)] px-4.5 pb-2.5 text-[11.5px] font-semibold uppercase tracking-[.04em] text-faint">
+            <div className="grid grid-cols-[1fr_1.2fr_.8fr_.7fr_.9fr_.7fr_1fr] gap-3 border-b border-[rgba(var(--tint-slate),.1)] px-4.5 pb-2.5 text-[11.5px] font-semibold uppercase tracking-[.04em] text-faint">
               <span>{t('fraud.severity')}</span><span>{t('fraud.pattern')}</span><span>{t('fraud.agent')}</span><span>{t('fraud.property')}</span><span>{t('fraud.confidence')}</span><span className="text-right">{t('fraud.amount')}</span><span className="text-right">{t('fraud.status')}</span>
             </div>
 
@@ -109,13 +109,13 @@ export default function FraudDetection({ activePropertyId }) {
             {rows?.map((r) => {
               const meta = FRAUD_SEVERITY_META[r.severity];
               return (
-                <div key={r.id} className="grid grid-cols-[1fr_1.2fr_.8fr_.7fr_.9fr_.7fr_1fr] items-center gap-3 border-b border-[rgba(60,70,110,.06)] px-4.5 py-3.5">
+                <div key={r.id} className="grid grid-cols-[1fr_1.2fr_.8fr_.7fr_.9fr_.7fr_1fr] items-center gap-3 border-b border-[rgba(var(--tint-slate),.06)] px-4.5 py-3.5">
                   <span className="justify-self-start rounded-lg px-2.5 py-1 text-xs font-semibold" style={{ color: meta.color, background: meta.bg }}>{t(meta.label)}</span>
                   <span className="text-[13.5px] font-medium text-ink">{r.pattern}</span>
                   <span className="text-[13px] text-muted">{r.agent}</span>
                   <span className="text-[13px] text-muted">{r.property.name}</span>
                   <span className="flex items-center gap-2">
-                    <span className="h-1.5 flex-1 overflow-hidden rounded bg-[rgba(60,70,110,.12)]">
+                    <span className="h-1.5 flex-1 overflow-hidden rounded bg-[rgba(var(--tint-slate),.12)]">
                       <span className="block h-full rounded" style={{ width: `${r.confidence}%`, background: 'linear-gradient(90deg,#7dabff,#4f8cff)' }} />
                     </span>
                     <span className="text-[11.5px] font-semibold text-body">{r.confidence}%</span>
@@ -125,7 +125,7 @@ export default function FraudDetection({ activePropertyId }) {
                     value={r.status}
                     disabled={updatingId === r.id}
                     onChange={(e) => updateStatus(r.id, e.target.value)}
-                    className="justify-self-end rounded-lg border border-[rgba(60,70,110,.14)] bg-transparent px-2 py-1.5 text-[12px] font-medium text-body disabled:opacity-50"
+                    className="justify-self-end rounded-lg border border-[rgba(var(--tint-slate),.14)] bg-transparent px-2 py-1.5 text-[12px] font-medium text-body disabled:opacity-50"
                   >
                     {STATUS_OPTIONS.map((s) => (
                       <option key={s} value={s}>{STATUS_LABEL[s]}</option>

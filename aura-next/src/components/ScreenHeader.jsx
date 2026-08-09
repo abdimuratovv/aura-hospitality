@@ -11,8 +11,8 @@ export default function ScreenHeader({ title, sub }) {
       </div>
       <div className="flex flex-none items-center gap-3 max-[860px]:w-full max-[860px]:justify-between">
         <div
-          className="flex gap-0.5 rounded-full border border-[rgba(20,30,70,.1)] p-1"
-          style={{ background: 'linear-gradient(145deg,rgba(20,30,70,.06),rgba(20,30,70,.015) 60%)', boxShadow: 'inset 0 1px 2px rgba(20,30,70,.05)' }}
+          className="flex gap-0.5 rounded-full border border-[rgba(var(--tint-ink),.1)] p-1"
+          style={{ background: 'linear-gradient(145deg,rgba(var(--tint-ink),.06),rgba(var(--tint-ink),.015) 60%)', boxShadow: 'inset 0 1px 2px rgba(var(--tint-ink),.05)' }}
         >
           <span className="cursor-pointer rounded-full px-4 py-2 text-[13px] font-medium text-body max-[860px]:px-2.5 max-[860px]:text-xs">{t('common.today')}</span>
           <span

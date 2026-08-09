@@ -5,6 +5,7 @@ import Icon from './Icon.jsx';
 import LanguageSwitcher from './LanguageSwitcher.jsx';
 import { initialsFromName, timeAgo, ALERT_SEVERITY_META } from '../lib/format.js';
 import { useLanguage } from '../lib/i18n/LanguageContext.jsx';
+import { useTheme } from '../lib/theme/ThemeContext.jsx';
 
 function useClickOutside(onOutside) {
   const ref = useRef(null);
@@ -26,9 +27,9 @@ function PropertySwitcher({ properties, activePropertyId, onPropertyChange }) {
   const label = active ? active.name : t('common.allProperties');
 
   return (
-    <div ref={ref} className="relative flex flex-none items-center gap-2.5 border-r border-[rgba(60,70,110,.1)] pr-4 max-[860px]:pr-2.5">
+    <div ref={ref} className="relative flex flex-none items-center gap-2.5 border-r border-[rgba(var(--tint-slate),.1)] pr-4 max-[860px]:pr-2.5">
       <div
-        className="flex h-[34px] w-[34px] items-center justify-center rounded-[11px] border border-white/60 text-brand"
+        className="flex h-[34px] w-[34px] items-center justify-center rounded-[11px] border border-white/60 text-brand dark:border-white/10"
         style={{ background: 'linear-gradient(160deg,rgba(79,140,255,.22),rgba(70,210,200,.18))' }}
       >
         <Icon name="hotel" size={18} />
@@ -111,7 +112,7 @@ function SearchBox({ onNavigate }) {
         placeholder={t('header.searchPlaceholder')}
         className="w-full min-w-0 border-none bg-transparent text-[13.5px] text-ink outline-none"
       />
-      <span className="flex-none rounded-md border border-[rgba(60,70,110,.16)] px-1.5 py-0.5 text-[11px] text-faint">⌘K</span>
+      <span className="flex-none rounded-md border border-[rgba(var(--tint-slate),.16)] px-1.5 py-0.5 text-[11px] text-faint">⌘K</span>
 
       {open && trimmedQ.length >= 2 && (
         <div className="glass-card absolute left-0 top-[calc(100%+8px)] z-20 max-h-[360px] w-full min-w-[280px] overflow-y-auto p-1.5">
@@ -164,7 +165,7 @@ function NotificationsBell({ onNavigate }) {
       <button onClick={() => setOpen((o) => !o)} title={t('common.notifications')} className="icon-btn relative h-10 w-10 flex-none">
         <Icon name="bell" size={18} />
         {openAlerts.length > 0 && (
-          <span className="animate-pulse-dot absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-[#e5563f] shadow-[0_0_0_2px_rgba(255,255,255,.9)]" />
+          <span className="animate-pulse-dot absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-[#e5563f]" style={{ boxShadow: '0 0 0 2px var(--dot-ring)' }} />
         )}
       </button>
 
@@ -200,6 +201,7 @@ function NotificationsBell({ onNavigate }) {
 
 export default function Header({ user, onLogout, onMenuClick, properties = [], activePropertyId, onPropertyChange, onNavigate }) {
   const { t } = useLanguage();
+  const { theme, toggleTheme } = useTheme();
   return (
     <header className="glass-header flex flex-wrap items-center gap-4 p-3 px-4.5 max-[860px]:row-gap-2.5">
       <button
@@ -217,15 +219,15 @@ export default function Header({ user, onLogout, onMenuClick, properties = [], a
       <div className="flex-1" />
 
       <LanguageSwitcher />
-      <button title={t('common.theme')} className="icon-btn h-10 w-10 flex-none">
-        <Icon name="theme" size={18} />
+      <button onClick={toggleTheme} title={t('common.theme')} className="icon-btn h-10 w-10 flex-none">
+        <Icon name={theme === 'dark' ? 'theme' : 'moon'} size={18} />
       </button>
       <NotificationsBell onNavigate={onNavigate} />
       <button
         onClick={onLogout}
         title={t('common.signOut')}
-        className="flex flex-none items-center gap-2.5 rounded-full border border-[rgba(20,30,70,.1)] py-1 pl-1 pr-3 cursor-pointer"
-        style={{ background: 'linear-gradient(145deg,rgba(20,30,70,.05),rgba(20,30,70,.01) 60%)', boxShadow: 'inset 0 1px 2px rgba(20,30,70,.04)' }}
+        className="flex flex-none items-center gap-2.5 rounded-full border border-[rgba(var(--tint-ink),.1)] py-1 pl-1 pr-3 cursor-pointer"
+        style={{ background: 'linear-gradient(145deg,rgba(var(--tint-ink),.05),rgba(var(--tint-ink),.01) 60%)', boxShadow: 'inset 0 1px 2px rgba(var(--tint-ink),.04)' }}
       >
         <span
           className="flex h-[30px] w-[30px] flex-none items-center justify-center rounded-full text-[12px] font-semibold text-white"

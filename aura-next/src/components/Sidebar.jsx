@@ -23,7 +23,7 @@ export default function Sidebar({ screen, setScreen, collapsed, toggleCollapsed,
       )}
       <aside
         style={{ width: collapsed ? '78px' : '256px' }}
-        className={`glass-panel flex flex-col p-3.5 transition-[width,transform] duration-300 ease-out max-[860px]:fixed max-[860px]:top-2.5 max-[860px]:bottom-2.5 max-[860px]:left-2.5 max-[860px]:z-[60] max-[860px]:!h-auto max-[860px]:!w-[250px] max-[860px]:shadow-[0_20px_60px_-10px_rgba(20,30,70,.4)] ${drawerTranslate}`}
+        className={`glass-panel flex flex-col p-3.5 transition-[width,transform] duration-300 ease-out max-[860px]:fixed max-[860px]:top-2.5 max-[860px]:bottom-2.5 max-[860px]:left-2.5 max-[860px]:z-[60] max-[860px]:!h-auto max-[860px]:!w-[250px] max-[860px]:shadow-[0_20px_60px_-10px_rgba(var(--tint-ink),.4)] ${drawerTranslate}`}
       >
         <div className="flex items-center gap-2.5 px-2 pb-5.5 pt-1.5">
           <div

@@ -11,14 +11,19 @@ export function formatAmount(amount) {
   return `${sign}$${abs}`;
 }
 
+// These *_META objects hold `color`/`bg`/`dot` as CSS custom-property
+// references (var(--color-critical) etc.), not literal hex/rgba — they're
+// consumed via inline `style={{...}}` in JSX, which bare Tailwind classes
+// can't reach, so referencing the same theme-aware variables globals.css
+// flips under `.dark` is what makes these badges dark-mode-correct too.
 export function amountColor(amount) {
-  return amount < 0 ? '#d1452e' : '#26241f';
+  return amount < 0 ? 'var(--color-critical)' : 'var(--color-ink)';
 }
 
 export const FLAG_META = {
-  CLEARED: { label: 'status.cleared', color: '#1f9268', bg: 'rgba(80,180,150,.16)' },
-  FLAGGED: { label: 'status.flagged', color: '#d1452e', bg: 'rgba(229,86,63,.15)' },
-  REVIEW: { label: 'status.review', color: '#b47e12', bg: 'rgba(214,158,46,.16)' },
+  CLEARED: { label: 'status.cleared', color: 'var(--color-success)', bg: 'var(--color-success-bg)' },
+  FLAGGED: { label: 'status.flagged', color: 'var(--color-critical)', bg: 'var(--color-critical-bg)' },
+  REVIEW: { label: 'status.review', color: 'var(--color-warning)', bg: 'var(--color-warning-bg)' },
 };
 
 export function initialsFromName(name) {
@@ -28,28 +33,28 @@ export function initialsFromName(name) {
 }
 
 export const FRAUD_SEVERITY_META = {
-  CRITICAL: { label: 'status.critical', color: '#d1452e', bg: 'rgba(229,86,63,.15)' },
-  HIGH: { label: 'status.high', color: '#b47e12', bg: 'rgba(214,158,46,.16)' },
-  MEDIUM: { label: 'status.medium', color: '#4f8cff', bg: 'rgba(79,140,255,.14)' },
+  CRITICAL: { label: 'status.critical', color: 'var(--color-critical)', bg: 'var(--color-critical-bg)' },
+  HIGH: { label: 'status.high', color: 'var(--color-warning)', bg: 'var(--color-warning-bg)' },
+  MEDIUM: { label: 'status.medium', color: 'var(--color-brand)', bg: 'var(--color-info-bg)' },
 };
 
 export const RISK_BAND_META = {
-  HIGH: { label: 'status.high', color: '#d1452e', bg: 'rgba(229,86,63,.15)' },
-  MEDIUM: { label: 'status.medium', color: '#b47e12', bg: 'rgba(214,158,46,.16)' },
-  LOW: { label: 'status.low', color: '#1f9268', bg: 'rgba(80,180,150,.16)' },
+  HIGH: { label: 'status.high', color: 'var(--color-critical)', bg: 'var(--color-critical-bg)' },
+  MEDIUM: { label: 'status.medium', color: 'var(--color-warning)', bg: 'var(--color-warning-bg)' },
+  LOW: { label: 'status.low', color: 'var(--color-success)', bg: 'var(--color-success-bg)' },
 };
 
 export const ALERT_SEVERITY_META = {
-  CRITICAL: { label: 'status.critical', dot: '#d1452e', color: '#d1452e', bg: 'rgba(229,86,63,.15)' },
-  WARNING: { label: 'status.warning', dot: '#b47e12', color: '#b47e12', bg: 'rgba(214,158,46,.16)' },
-  INFO: { label: 'status.info', dot: '#4f8cff', color: '#4f8cff', bg: 'rgba(79,140,255,.14)' },
+  CRITICAL: { label: 'status.critical', dot: 'var(--color-critical)', color: 'var(--color-critical)', bg: 'var(--color-critical-bg)' },
+  WARNING: { label: 'status.warning', dot: 'var(--color-warning)', color: 'var(--color-warning)', bg: 'var(--color-warning-bg)' },
+  INFO: { label: 'status.info', dot: 'var(--color-brand)', color: 'var(--color-brand)', bg: 'var(--color-info-bg)' },
 };
 
 export const CHECKLIST_STATUS_META = {
   DONE: { icon: '✓', iconC: 'text-success bg-success-bg' },
-  WARNING: { icon: '!', iconC: 'text-warning bg-[rgba(214,158,46,.18)]' },
+  WARNING: { icon: '!', iconC: 'text-warning bg-[rgba(var(--warning-rgb),.18)]' },
   CRITICAL: { icon: '!', iconC: 'text-critical bg-critical-bg' },
-  PENDING: { icon: '○', iconC: 'text-faint bg-[rgba(60,70,110,.1)]' },
+  PENDING: { icon: '○', iconC: 'text-faint bg-[rgba(var(--tint-slate),.1)]' },
 };
 
 export function timeAgo(dateInput, t) {

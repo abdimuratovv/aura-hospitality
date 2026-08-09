@@ -98,7 +98,7 @@ export default function Transactions({ activePropertyId, properties, onPropertyC
           onClick={toggleFlagged}
           className={
             flaggedOnly
-              ? 'cursor-pointer rounded-xl border border-[rgba(229,86,63,.2)] bg-[rgba(229,86,63,.1)] px-4 py-2.5 text-sm font-semibold text-critical'
+              ? 'cursor-pointer rounded-xl border border-[rgba(var(--critical-rgb),.2)] bg-[rgba(var(--critical-rgb),.1)] px-4 py-2.5 text-sm font-semibold text-critical'
               : 'pill px-4 py-2.5 text-sm'
           }
         >
@@ -110,8 +110,8 @@ export default function Transactions({ activePropertyId, properties, onPropertyC
         <div className="table-scroll">
           <div className="table-min">
             <div
-              className="grid grid-cols-[.9fr_.6fr_1fr_1fr_.9fr_.8fr_.8fr] gap-3 border-b border-[rgba(20,30,70,.08)] px-5 py-4 text-[11.5px] font-semibold uppercase tracking-[.04em] text-faint"
-              style={{ background: 'linear-gradient(145deg,rgba(20,30,70,.035),rgba(20,30,70,.008))' }}
+              className="grid grid-cols-[.9fr_.6fr_1fr_1fr_.9fr_.8fr_.8fr] gap-3 border-b border-[rgba(var(--tint-ink),.08)] px-5 py-4 text-[11.5px] font-semibold uppercase tracking-[.04em] text-faint"
+              style={{ background: 'linear-gradient(145deg,rgba(var(--tint-ink),.035),rgba(var(--tint-ink),.008))' }}
             >
               <span>{t('transactions.folio')}</span><span>{t('transactions.time')}</span><span>{t('transactions.type')}</span><span>{t('transactions.property')}</span><span>{t('transactions.agent')}</span><span className="text-right">{t('transactions.amount')}</span><span className="text-right">{t('transactions.status')}</span>
             </div>
@@ -129,7 +129,7 @@ export default function Transactions({ activePropertyId, properties, onPropertyC
             {rows.map((tx) => {
               const flag = FLAG_META[tx.flag];
               return (
-                <div key={tx.id} className="grid grid-cols-[.9fr_.6fr_1fr_1fr_.9fr_.8fr_.8fr] items-center gap-3 border-b border-[rgba(60,70,110,.06)] px-5 py-3.5">
+                <div key={tx.id} className="grid grid-cols-[.9fr_.6fr_1fr_1fr_.9fr_.8fr_.8fr] items-center gap-3 border-b border-[rgba(var(--tint-slate),.06)] px-5 py-3.5">
                   <span className="font-mono text-[13px] font-semibold">#{tx.folioId}</span>
                   <span className="text-[13px] text-body">{formatTime(tx.postedAt)}</span>
                   <span className="text-[13.5px] font-medium">{tx.type}</span>

@@ -41,7 +41,7 @@ export default function LoginScreen({ onLoginSuccess }) {
       </div>
       <div className="glass-login grid w-full max-w-[940px] animate-fade-up-slow grid-cols-[1.05fr_.95fr] overflow-hidden max-[760px]:grid-cols-1">
         <div
-          className="relative flex flex-col justify-between overflow-hidden border-r border-white/50 p-11 max-[760px]:p-[30px_28px] max-[480px]:p-[26px_22px]"
+          className="relative flex flex-col justify-between overflow-hidden border-r border-white/50 p-11 max-[760px]:p-[30px_28px] max-[480px]:p-[26px_22px] dark:border-white/10"
           style={{ background: 'linear-gradient(160deg,rgba(79,140,255,.14),rgba(70,210,200,.1))' }}
         >
           <div className="flex items-center gap-3">
@@ -115,9 +115,9 @@ export default function LoginScreen({ onLoginSuccess }) {
           </button>
 
           <div className="my-5.5 flex items-center gap-3 text-[12.5px] text-faint">
-            <div className="h-px flex-1 bg-[rgba(60,70,110,.14)]" />
+            <div className="h-px flex-1 bg-[rgba(var(--tint-slate),.14)]" />
             {t('login.or')}
-            <div className="h-px flex-1 bg-[rgba(60,70,110,.14)]" />
+            <div className="h-px flex-1 bg-[rgba(var(--tint-slate),.14)]" />
           </div>
 
           <button type="button" onClick={submit} disabled={loading} className="btn-ghost w-full py-3.5 text-sm font-medium text-ink-soft disabled:opacity-60">

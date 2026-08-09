@@ -52,7 +52,7 @@ export default function RevenueLeakage({ activePropertyId }) {
         <div className="glass-card p-5">
           <span className="text-[12.5px] font-semibold text-body">{t('leakage.recoveryRate')}</span>
           <div className="mt-3 text-[28px] font-semibold">{data?.recoveryRatePct ?? '—'}%</div>
-          <div className="mt-3.5 h-[7px] overflow-hidden rounded-[5px] bg-[rgba(60,70,110,.1)]">
+          <div className="mt-3.5 h-[7px] overflow-hidden rounded-[5px] bg-[rgba(var(--tint-slate),.1)]">
             <div className="h-full rounded-[5px]" style={{ width: `${data?.recoveryRatePct ?? 0}%`, background: 'linear-gradient(90deg,#5fbf99,#1f9268)' }} />
           </div>
         </div>
@@ -71,12 +71,12 @@ export default function RevenueLeakage({ activePropertyId }) {
                 <span className="text-[13.5px] font-medium text-ink">{l.category}</span>
                 <span className="text-[13.5px] font-semibold">{formatAmount(l.amount)} <span className="text-xs font-medium text-faint">· {l.pct}%</span></span>
               </div>
-              <div className="h-3 overflow-hidden rounded-[7px] bg-[rgba(60,70,110,.08)]">
+              <div className="h-3 overflow-hidden rounded-[7px] bg-[rgba(var(--tint-slate),.08)]">
                 <div
                   className="relative h-full rounded-[7px] shadow-[inset_0_1px_1px_rgba(255,255,255,.5)]"
                   style={{ width: `${(l.pct / maxPct) * 100}%`, background: 'linear-gradient(90deg,#7dabff,#46d2c8)' }}
                 >
-                  <div className="absolute inset-y-0 left-0 rounded-[7px] bg-[rgba(31,146,104,.55)]" style={{ width: `${Math.min(100, l.recoveryRatePct)}%` }} />
+                  <div className="absolute inset-y-0 left-0 rounded-[7px] bg-[rgba(var(--success-rgb),.55)]" style={{ width: `${Math.min(100, l.recoveryRatePct)}%` }} />
                 </div>
               </div>
               <div className="mt-1.5 flex items-baseline justify-between text-[11px] text-faint">

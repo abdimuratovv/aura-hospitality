@@ -9,7 +9,7 @@ function Toggle({ on, onClick }) {
     <span
       onClick={onClick}
       className="relative h-[27px] w-[46px] cursor-pointer rounded-2xl transition-colors"
-      style={on ? { background: 'linear-gradient(160deg,#7dabff,#4f8cff)', boxShadow: 'inset 0 1px 2px rgba(0,0,0,.2)' } : { background: 'rgba(60,70,110,.18)' }}
+      style={on ? { background: 'linear-gradient(160deg,#7dabff,#4f8cff)', boxShadow: 'inset 0 1px 2px rgba(0,0,0,.2)' } : { background: 'rgba(var(--tint-slate),.18)' }}
     >
       <span
         className="absolute top-1 h-[21px] w-[21px] rounded-full bg-white shadow-[0_2px_4px_rgba(0,0,0,.2)] transition-all"
@@ -185,7 +185,7 @@ export default function Settings() {
               <Toggle on={profile.twoFactorEnabled} onClick={() => toggle('twoFactorEnabled')} />
             </div>
 
-            <div className="mt-4 border-t border-[rgba(60,70,110,.08)] pt-5">
+            <div className="mt-4 border-t border-[rgba(var(--tint-slate),.08)] pt-5">
               <div className="mb-4 text-sm font-semibold">{t('settings.changePassword')}</div>
               <div className="grid grid-cols-1 gap-4.5 lg:grid-cols-2">
                 <div className="lg:col-span-2">
@@ -238,14 +238,14 @@ export default function Settings() {
         )}
 
         {showSaveBar && (
-          <div className="mt-6 flex items-center gap-3 border-t border-[rgba(60,70,110,.08)] pt-5">
+          <div className="mt-6 flex items-center gap-3 border-t border-[rgba(var(--tint-slate),.08)] pt-5">
             <button onClick={save} disabled={saveState === 'saving'} className="btn-primary px-6.5 py-3.5 text-sm disabled:opacity-60">
               {saveState === 'saving' ? t('common.saving') : t('common.save')}
             </button>
             <button
               onClick={() => { setName(profile.name); }}
-              className="rounded-full border border-white/30 px-6.5 py-3.5 text-sm font-medium text-muted"
-              style={{ background: 'linear-gradient(145deg,rgba(255,255,255,.16),rgba(255,255,255,.02) 60%)' }}
+              className="rounded-full border border-[rgba(var(--tint-ink),.16)] px-6.5 py-3.5 text-sm font-medium text-muted"
+              style={{ background: 'linear-gradient(145deg,rgba(var(--tint-ink),.06),rgba(var(--tint-ink),.015) 60%)' }}
             >
               {t('common.cancel')}
             </button>

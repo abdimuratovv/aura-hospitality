@@ -68,9 +68,9 @@ export default function Dashboard({ goAlerts, activePropertyId, properties }) {
   }, [activePropertyId]);
 
   const INSIGHT_META = {
-    CRITICAL: { label: t('dashboard.insightCritical'), dot: 'bg-critical', text: 'text-critical', border: 'border-[rgba(229,86,63,.16)]', bg: 'bg-[rgba(229,86,63,.08)]' },
-    OPPORTUNITY: { label: t('dashboard.insightOpportunity'), dot: 'bg-warning', text: 'text-warning', border: 'border-[rgba(214,158,46,.16)]', bg: 'bg-[rgba(214,158,46,.08)]' },
-    TREND: { label: t('dashboard.insightTrend'), dot: 'bg-brand', text: 'text-brand', border: 'border-[rgba(79,140,255,.16)]', bg: 'bg-[rgba(79,140,255,.08)]' },
+    CRITICAL: { label: t('dashboard.insightCritical'), dot: 'bg-critical', text: 'text-critical', border: 'border-[rgba(var(--critical-rgb),.16)]', bg: 'bg-[rgba(var(--critical-rgb),.08)]' },
+    OPPORTUNITY: { label: t('dashboard.insightOpportunity'), dot: 'bg-warning', text: 'text-warning', border: 'border-[rgba(var(--warning-rgb),.16)]', bg: 'bg-[rgba(var(--warning-rgb),.08)]' },
+    TREND: { label: t('dashboard.insightTrend'), dot: 'bg-brand', text: 'text-brand', border: 'border-[rgba(var(--info-rgb),.16)]', bg: 'bg-[rgba(var(--info-rgb),.08)]' },
   };
 
   if (error) return <div className="text-sm text-critical">{t('common.loadError')}</div>;
@@ -88,7 +88,7 @@ export default function Dashboard({ goAlerts, activePropertyId, properties }) {
     { label: t('dashboard.portfolioRevenue'), icon: 'revenue', iconC: 'text-success', iconBg: 'bg-success-bg', value: `$${(s.portfolioRevenue / 1e6).toFixed(2)}M`, badge: `▲ ${s.portfolioRevenueChangePct}%`, badgeC: 'text-success', badgeBg: 'bg-success-bg', note: t('dashboard.vsLastWeek') },
     { label: t('dashboard.activeFraudAlerts'), icon: 'shield', iconC: 'text-critical', iconBg: 'bg-critical-bg', value: String(s.activeFraudAlerts), badge: `${s.activeFraudAlertsCritical} ${t('status.critical').toLowerCase()}`, badgeC: 'text-critical', badgeBg: 'bg-critical-bg', note: t('dashboard.needsReview') },
     { label: t('dashboard.revenueLeakage'), icon: 'drop', iconC: 'text-warning', iconBg: 'bg-warning-bg', value: `$${Math.round(s.revenueLeakage / 1000)}K`, badge: `$${Math.round(s.revenueLeakageRecovered / 1000)}K ${t('dashboard.legendRecovered').toLowerCase()}`, badgeC: 'text-warning', badgeBg: 'bg-warning-bg', note: '' },
-    { label: t('dashboard.nightAudit'), icon: 'moon', iconC: 'text-brand', iconBg: 'bg-[rgba(79,140,255,.16)]', value: `${s.nightAuditPct}%`, badge: t('dashboard.reconciled'), badgeC: 'text-success', badgeBg: 'bg-success-bg', note: t('dashboard.exceptions', { n: s.nightAuditExceptions }) },
+    { label: t('dashboard.nightAudit'), icon: 'moon', iconC: 'text-brand', iconBg: 'bg-[rgba(var(--info-rgb),.16)]', value: `${s.nightAuditPct}%`, badge: t('dashboard.reconciled'), badgeC: 'text-success', badgeBg: 'bg-success-bg', note: t('dashboard.exceptions', { n: s.nightAuditExceptions }) },
   ];
 
   return (
@@ -128,9 +128,9 @@ export default function Dashboard({ goAlerts, activePropertyId, properties }) {
               <linearGradient id="aRev" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#4f8cff" stopOpacity=".28" /><stop offset="1" stopColor="#4f8cff" stopOpacity="0" /></linearGradient>
               <linearGradient id="aRec" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#46d2c8" stopOpacity=".26" /><stop offset="1" stopColor="#46d2c8" stopOpacity="0" /></linearGradient>
             </defs>
-            <line x1="0" y1="50" x2="640" y2="50" stroke="rgba(60,70,110,.08)" />
-            <line x1="0" y1="110" x2="640" y2="110" stroke="rgba(60,70,110,.08)" />
-            <line x1="0" y1="170" x2="640" y2="170" stroke="rgba(60,70,110,.08)" />
+            <line x1="0" y1="50" x2="640" y2="50" stroke="rgba(var(--tint-slate),.08)" />
+            <line x1="0" y1="110" x2="640" y2="110" stroke="rgba(var(--tint-slate),.08)" />
+            <line x1="0" y1="170" x2="640" y2="170" stroke="rgba(var(--tint-slate),.08)" />
             <path d={revenueTrend.areaPath} fill="url(#aRev)" />
             <path d={revenueTrend.linePath} fill="none" stroke="#4f8cff" strokeWidth="2.5" strokeLinecap="round" />
             <path d={recoveredTrend.areaPath} fill="url(#aRec)" />
@@ -178,7 +178,7 @@ export default function Dashboard({ goAlerts, activePropertyId, properties }) {
           </div>
           <div className="flex flex-col gap-1">
             {data.recentAlerts.map((a, i) => (
-              <div key={a.id} className={`flex items-center gap-3.5 rounded-2xl px-3 py-2.5 ${i % 2 === 1 ? 'bg-[rgba(20,30,70,.035)]' : ''}`}>
+              <div key={a.id} className={`flex items-center gap-3.5 rounded-2xl px-3 py-2.5 ${i % 2 === 1 ? 'bg-[rgba(var(--tint-ink),.035)]' : ''}`}>
                 <span className={`h-2 w-2 flex-none rounded-full ${ALERT_DOT[a.severity]}`} />
                 <div className="min-w-0 flex-1">
                   <div className="text-[13.5px] font-semibold">{a.title}</div>
